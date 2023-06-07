@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<flow name="salesforce-sapi-request" doc:id="ccebef9b-fe1d-4eb7-ae58-a86e9d9cadf3" >
+		<http:request method="#[vars.parameters.method]" doc:name="Request" doc:id="ccd07361-d7b1-4d44-a6be-c5e65a292108" config-ref="HTTP_Request_configuration_salesforce_sapi" url="#[vars.parameters.url]" responseTimeout="#[p('salesforce-sapi.responseTimeout')]"/>
+	</flow>
+	<flow name="hubspot-sapi-request" doc:id="652fe3a3-9f6f-4cef-9a80-692a3286ce08" >
+		<http:request method="#[vars.parameters.method]" doc:name="Request" doc:id="f8a081fa-e5a0-4ba6-9cbc-bbebfe41a6e8" config-ref="HTTP_Request_configuration_hubspot_sapi" url="#[vars.parameters.url]" responseTimeout="#[p('hubspot-sapi.responseTimeout')]"/>
+	</flow>
+</mule>

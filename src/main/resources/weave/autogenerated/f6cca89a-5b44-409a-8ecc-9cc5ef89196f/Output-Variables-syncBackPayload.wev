@@ -1,0 +1,6 @@
+%dw 2.0
+
+type auto_f6cca89a_5b44_409a_8ecc_9cc5ef89196f_Output_Variables_syncBackPayload = {|
+  properties: Array<{|    name: String,     value: Null  |}>
+|}
+

@@ -1,0 +1,36 @@
+mule:
+  env: "local"
+
+http:
+  host: "localhost"
+  port: "8082"
+      
+salesforce:
+  
+  token_endpoint: ""
+  audience_url: "https://test.salesforce.com"
+  system:
+    URL: "https://doit-intl--stage.sandbox.my.salesforce.com"
+    username: "udit.khare+sandbox1@apisero.com"
+    authorization_url: "https://test.salesforce.com/services/Soap/u/55.0"
+    
+    
+
+lastUpdatedTime: ""
+ 
+errorCodeMessage:
+  http:
+    badRequest:
+      code: "400"    
+  
+query:
+  contact: "select of_BOFU_Submissions__c,MailingStreet,Became_an_Other_Lifecycle_Date__c,Account_Name_Text__c,LeadSource,Hubspot_Contact_Type__c,MailingCountry,Date_Lead_Became_Rejected__c,Do_Not_Call__c,DoiT_Parent_Sales_Region__c,Event_Name__c,Fax,Hot_Lead__c,Buying_Role__c,Do_Not_Contact__c,hasoptedoutofemail,Hubspot_Lead_Status__c,Persona__c,Hubspot_Country__c,OwnerId,Lead_Score__c,Lead_Score_Band__c,Lead_Source_Detail__c,Status__c,Minimum_Required_Information__c,MQL_Achievement_Reason__c,NPS_Opt_In__c,Event_Date__c,SalesLoft1__Most_Recent_Cadence_Name__c,MailingPostalCode, LastModifiedDate from contact"
+  where:
+    clause: " where LastModifiedDate >= "
+  
+  
+#objectStore Configurations
+
+scheduler:
+  frequency: "15"
+  startDelay: "0"

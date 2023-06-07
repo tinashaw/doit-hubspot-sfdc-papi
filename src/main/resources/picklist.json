@@ -1,0 +1,214 @@
+{
+	"deal" : 
+	{
+		"dealtype": 
+		{
+			"Commitment": "commit",
+			"On-Demand": "ondemand",			
+			"On-Demand to Commit": "ondemand2commit",
+			"Renewal": "renewal",
+			"ISV Program": "ISV Program",
+			"Import": "Import",
+			"New Logo": "New Logo",
+			"Cross Sell": "Cross Sell",
+			"Upgrade": "Upgrade"		
+			
+		},
+		
+		"marketing_rights":
+		{
+			"Yes": "true",
+			"No": "false"
+		},
+		
+		"pipeline" : 
+		{
+			"Read Only" : "900e252a-bc3c-47b9-90d2-67d67aa30214",
+			"Opportunity" : "5f36024f-d178-4234-a962-38b62fcdc36e"
+			},
+			
+			
+		"ReadOnlyStage": 
+			{
+			"New": "8fe841d1-6d18-48ba-95d9-ea6584d49bf4",
+			"Initial Meeting Scheduled" : "5db43225-a455-4818-b1a8-7dc88e566d5f",
+			"Qualified": "b66ac23f-ed2d-4f83-a861-fa2a104151fd",
+			"Offer Submitted": "e466f020-ae7b-4f56-8895-a2bd6787c040",
+			"Negotiation": "07d546a2-72d0-4d77-9775-ce1d32b676bb",
+			"Contract Signed": "0aca11cd-f398-4622-9991-8d240688f1be",
+			"Consolidated": "4093c1a7-6d43-4b24-943d-817f404fc059",
+			"Lost": "66b750d7-8010-47ce-baa3-4bfc14ec2f94"			
+			},
+		"OpportunityStage":
+			{
+			"New": "a7cad957-3e47-494e-84c7-23018eb93406",
+			"Initial Meeting Scheduled" : "131a0f5b-855f-4c35-acd9-122b8a0e5e99",
+			"Qualified": "fe4ce424-4188-4a13-8d81-67130341a952",
+			"Offer Submitted": "b04322cb-d410-48a8-a3bf-c1efaec7dfa5",
+			"Negotiation": "96af4e8c-a625-4a4e-80a8-94807e931051",
+			"Contract Signed": "629e53ef-e060-411f-b6de-ab6626ed4f07",
+			"Consolidated": "2be7431a-7203-4998-acd7-2cc362a7cd5a",
+			"Lost": "7d239d11-8cac-4a41-aca3-4fa179820780"
+			}
+						
+	},
+	"contact" :{
+		"LeadSource": {
+				"CMP": "CMP",
+				"DoiT Employee": "DoiT Employee",
+				"Marketing": "Marketing",
+				"Partner": "Partner",
+				"Sales": "Sales"
+		},
+		"Hubspot_Contact_Type__c": {
+				"Competitor": "Competitor",
+				"Customer": "Customers",
+				"Former Customer": "Former Customer",
+				"Internal": "Internal",
+				"Marketing": "Marketing",
+				"Other": "Other",
+				"Partner": "Partner",
+				"Prospect": "Prospect",
+				"Sales": "Sales",
+				"SQ": "SQ",
+				"Vendor": "Vendor"
+		},
+		"Do_Not_Call__c": {
+				"Yes": "true ",
+				"No": "false "
+		},
+		"DoiT_Parent_Sales_Region__c": {
+				"ANZ": "ANZ",
+				"APAC": "APAC",
+				"IL": "IL",
+				"NA": "NA",
+				"NEMEA": "NEMEA",
+				"SEMEA": "SEMEA",
+				"UK": "UK"
+		},
+		"Hot_Lead__c": {
+				"Yes": "true ",
+				"No": "false "			
+		},
+		"hot_lead":
+		{
+			"true" : "Yes" ,
+			 "false" : "No"
+		},
+		
+		"Buying_Role__c": {
+				"Blocker": "BLOCKER",
+				"Budget Holder": "BUDGET_HOLDER",
+				"Champion": "CHAMPION",
+				"Decision Maker": "DECISION_MAKER",
+				"End User": "END_USER",
+				"Executive Sponsor": "EXECUTIVE_SPONSOR",
+				"Influencer": "INFLUENCER",
+				"Legal & Compliance": "LEGAL_AND_COMPLIANCE",
+				"Other": "OTHER"
+		},
+		"Hubspot_Lead_Status__c": {
+				"In Progress": "IN_PROGRESS",
+				"Accepted": "Accepted",
+				"Rejected - Existing deal/customer": "Rejected - Existing deal/customer",
+				"Rejected - Competitor/Partner": "Rejected - Competitor/Partner",
+				"Rejected - No Response": "Rejected - No Response",
+				"Rejected - Not a Sales Inquiry/Other": "REJECTED_NOT_SALES",
+				"Open": "OPEN",
+				"New": "NEW",
+				"Connected": "CONNECTED",
+				"Discovery Call Scheduled - Create deal": "Discovery Call Scheduled - Create deal"
+		},
+		"hs_persona": {
+				"persona_5":"Demo Dan",
+				"persona_4": "Curious Georgina",
+				"persona_3": "Cost-Forward Cameron",
+				"persona_2": "Technology Tim",
+				"persona_1": "Business Brian"
+		},
+		"contact_source_detail": {
+				"ABM": "ABM",
+				"Affiliate Referral": "Affiliate Referral",
+				"Apollo": "Apollo",
+				"Appointment Setting": "Appointment Setting",
+				"Chili Piper - FS Calc": "Chili Piper - FS Calc",
+				"Cognism": "Cognism",
+				"Content Syndication": "Content Syndication",
+				"Direct Traffic": "Direct Traffic",
+				"Display Ad": "Display Ad",
+				"Email Marketing": "Email Marketing",
+				"Event-Live": "Event-Live",
+				"Event-Virtual-Hybrid": "Event-Virtual-Hybrid",
+				"Existing Sales Relationship": "Existing Sales Relationship",
+				"Linked-In": "Linked-In",
+				"List Enrichment": "List Enrichment",
+				"Organic Search": "Organic Search",
+				"Organic Social": "Organic Social",
+				"Other": "Other",
+				"Paid Search": "Paid Search",
+				"Paid Social": "Paid Social",
+				"Partner Referral": "Partner Referral",
+				"PPC": "PPC",
+				"Referral from existing customer": "Referral from existing customer",
+				"SalesLoft": "SalesLoft",
+				"Sponsored Email": "Sponsored Email",
+				"Sponsored Webinar": "Sponsored Webinar",
+				"Webinar": "Webinar",
+				"Website": "Website",
+				"Worked with DoiT previously": "Worked with DoiT previously"
+		},
+		"mql_achievement_reason__c": {
+				"Appointment Setting": "Appointment Setting",
+				"Attended Event": "Attended Event",
+				"Attended Webinar": "Attended Webinar",
+				"CMP Test Drive Inquiry": "Test Drive Talk to Sales",
+				"Drift": "Drift",
+				"Event Hand Raiser": "Event Hand Raiser",
+				"Flexsave Hand Raiser": "Flexsave Hand Raiser",
+				"FlexSave Inquiry": "FlexSave",
+				"Hand Raiser Submission": "BOFU Submission",
+				"ISV Program Inquiry": "ISV Program",
+				"Lead Scoring": "Lead Scoring",
+				"Other": "Other",
+				"Scale Team": "Scale Team"
+		},
+		"nps_opt_in__c": {
+				"Yes": "Yes",
+				"No": "No"
+		},
+		"marketing_contact__c": {
+				"Yes": "Yes",
+				"No": "No"
+		},
+		"hs_marketable_status": {
+				"true": "true",
+				"false": "false"
+		},
+		"lifecycle_stage__c": {
+				"Customer": "Customer",
+				"Lead": "Lead",
+				"Marketing Qualified Lead": "Marketing Qualified Lead",
+				"Opportunity": "Opportunity",
+				"Other": "Other",
+				"Sales Accepted Lead": "Sales Accepted Lead",
+				"Sales Qualified Lead": "Sales Qualified Lead",
+				"Subscriber": "Subscriber",
+				"Tele Accepted Lead": "Tele Accepted Lead"
+		},
+		
+		"hs_buying_role":
+			{			
+			"BLOCKER" : "Blocker",
+			"BUDGET_HOLDER" : "Budget Holder",
+			"CHAMPION" : "Champion",
+			"DECISION_MAKER" : "Decision Maker",
+			"END_USER" : "End User",
+			"EXECUTIVE_SPONSOR" : "Executive Sponsor",
+			"INFLUENCER" : "Influencer",
+			"LEGAL_AND_COMPLIANCE" : "Legal & Compliance",
+			"OTHER" : "Other"
+			}
+	}
+}
+		
+			

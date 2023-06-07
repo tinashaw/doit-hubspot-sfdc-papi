@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="updated-company-schedularFlow" doc:id="ed3ba485-2aa0-4f34-9fd0-0f4f9c1a73a5" >
+		<scheduler doc:name="Scheduler" doc:id="fcb8b73d-84b6-4c9d-b04c-973189e941c2" >
+			<scheduling-strategy >
+				<fixed-frequency />
+			</scheduling-strategy>
+		</scheduler>
+		<os:retrieve doc:name="Retrieve minTime" doc:id="6b30ecee-8e9e-4bde-a989-72a46939ce0c" key="minTime-company" objectStore="Object_store" target="minTime" >
+			<os:default-value ><![CDATA[#["1685001414195"]]]></os:default-value>
+		</os:retrieve>
+<!-- [STUDIO:"Set Variable timeOffset"]		<set-variable value='#[""]' doc:name="Set Variable timeOffset" doc:id="f5e2c8f7-fcb9-4142-83f5-3740594d10a1" variableName="timeOffset" /> [STUDIO] -->
+		<flow-ref doc:name="Flow Ref to updated-company-syncSub_Flow" doc:id="a344d2de-1242-4ab5-ad5e-ef68b9f6a358" name="updated-company-syncSub_Flow" />
+	</flow>
+	<sub-flow name="updated-company-syncSub_Flow" doc:id="11e107db-b1a0-49f0-bde5-23889193b3e4" >
+		<http:request method="GET" doc:name="Request to fetch all recentmodified contacts" doc:id="5060933f-0688-4730-8fe6-8ae209c7fece" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/company/recentmodified" responseTimeout="#[p('hubspot-sapi.responseTimeout')]" target="recentmodifiedCompanies" >
+			<http:query-params ><![CDATA[#[output application/java
+---
+{
+	"count" : p('url.recentmodifiedcount') as String
+}]]]></http:query-params>
+		</http:request>
+		<ee:transform doc:name="Transform Message" doc:id="1ef4d0d6-9e5e-410c-a92b-ec6624cda477" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload default [] ++ ((vars.recentmodifiedCompanies.results filter ((item, index) -> item.properties.hs_lastmodifieddate.value as Number > vars.minTime as Number)).companyId default [])]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="recentmodifiedTime" ><![CDATA[%dw 2.0
+output application/json
+---
+max([max(vars.recentmodifiedContacts.contacts.addedAt), vars.recentmodifiedTime default 0]) default ""]]></ee:set-variable>
+				<ee:set-variable variableName="recentmodifiedIds" ><![CDATA[%dw 2.0
+output application/json
+---
+(vars.recentmodifiedContacts.contacts filter ((item, index) -> item.addedAt as Number > vars.minTime as Number)).vid]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<choice doc:name="Choice" doc:id="988accae-b8df-4ad0-ad33-f477fab9eae1" >
+			<when expression="#[sizeOf(vars.recentmodifiedIds) != p('url.recentmodifiedcount') as Number]" >
+				<flow-ref doc:name="Flow Ref to contact-leadFlow" doc:id="a9cd948b-f57c-426c-8ef9-4557cdba770a" name="updated-company-syncSub_Flow" />
+				<os:store doc:name="Store minTime" doc:id="29389e49-e423-492b-b647-0633663f82b4" key="minTime-company" objectStore="Object_store" >
+					<os:value ><![CDATA[#[vars.recentmodifiedTime]]]></os:value>
+				</os:store>
+			</when>
+			<otherwise >
+				<flow-ref doc:name="Flow Ref to contact-leadSub_Flow" doc:id="78913d73-081b-4735-b12b-fa64556f737f" name="contact-leadSub_Flow" />
+			</otherwise>
+		</choice>
+	</sub-flow>
+</mule>
