@@ -88,9 +88,6 @@ output application/json
 var picklist = readUrl("classpath://picklist.json", "application/json")
 ---
 [{
-//	AnnualRevenue : vars.companyDetails.properties.annualrevenue.value,
-//	Company_Domain__c :  vars.companyDetails.properties.domain.value,
-	
 	AnnualRevenue : vars.companyDetails.properties.annualrevenue.value as Number ,
 	Azure_Revenue__c : vars.companyDetails.properties.azure_revenue.value ,
 	AWS_Revenue__c : vars.companyDetails.properties.cmp_aws_revenue.value ,
@@ -124,8 +121,7 @@ var picklist = readUrl("classpath://picklist.json", "application/json")
 //	Type : vars.companyDetails.properties.type.value ,
 	Website : vars.companyDetails.properties.website.value ,
 	Hubspot_Company_ID__c : vars.companyDetails.companyId
-	
-	 }]
+}]
 	 ]]></ee:set-variable>
 			</ee:variables>
 		</ee:transform>

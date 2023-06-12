@@ -18,17 +18,19 @@ salesforce:
     authorization_url: "https://test.salesforce.com/services/Soap/u/55.0"
 
 url:
-  recentmodifiedcount: "100"
+  recentmodifiedcount: "20"
   
 parallelForEach:
   contact-lead:
     maxConcurrency: "5"
-  
+  company:
+    maxConcurrency: "5"
+      
 salesforce-sapi:
-  host: "doit-salesforce-sapi.us-e2.cloudhub.io"
-  port: ""         #for https, Otherwise for http:8081
-#  host: "localhost"
-#  port: "8082"
+#  host: "doit-salesforce-sapi.us-e2.cloudhub.io"
+#  port: ""         #for https, Otherwise for http:8081
+  host: "localhost"
+  port: "8082"
   protocol: "HTTP"
   basepath: "/api"
   responseBufferSize: "1024"

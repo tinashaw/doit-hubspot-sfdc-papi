@@ -6,7 +6,7 @@
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
 http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
-	<flow name="contact-schedularFlow" doc:id="b92f4993-be0a-4751-83cb-08b56fa7a202">
+	<flow name="contact-schedularFlow" doc:id="b92f4993-be0a-4751-83cb-08b56fa7a202" initialState="stopped">
 		<scheduler doc:name="Scheduler" doc:id="1dcde066-d2e2-49f8-b99b-3e9b317f65ce" >
 			<scheduling-strategy >
 				<fixed-frequency timeUnit="DAYS"/>
@@ -28,26 +28,14 @@ http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/cu
 	"count" : p('url.recentmodifiedcount') as String
 }]]]></http:query-params>
 		</http:request>
-		<ee:transform doc:name="Transform Message" doc:id="6076405c-c309-4b6b-ab58-aadaf1c2bae9" >
+		<ee:transform doc:name="Aggregate vids" doc:id="6076405c-c309-4b6b-ab58-aadaf1c2bae9" >
 			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
----
-payload default [] ++ ((vars.recentmodifiedContacts.contacts filter ((item, index) -> item.addedAt as Number > vars.minTime as Number)).vid default [])]]></ee:set-payload>
+				<ee:set-payload resource="dwl/conatct/msg-aggregated-vids.dwl" />
 			</ee:message>
 			<ee:variables >
-				<ee:set-variable variableName="recentmodifiedTime" ><![CDATA[%dw 2.0
-output application/json
----
-max([max(vars.recentmodifiedContacts.contacts.addedAt), vars.recentmodifiedTime default 0]) default ""]]></ee:set-variable>
-				<ee:set-variable variableName="timeOffset" ><![CDATA[%dw 2.0
-output application/json
----
-vars.recentmodifiedContacts."time-offset"]]></ee:set-variable>
-				<ee:set-variable variableName="recentmodifiedIds" ><![CDATA[%dw 2.0
-output application/json
----
-(vars.recentmodifiedContacts.contacts filter ((item, index) -> item.addedAt as Number > vars.minTime as Number)).vid]]></ee:set-variable>
+				<ee:set-variable resource="dwl/conatct/var-recentmodifiedIds.dwl" variableName="recentmodifiedIds" />
+				<ee:set-variable resource="dwl/conatct/var-time-offset.dwl" variableName="timeOffset" />
+				<ee:set-variable resource="dwl/conatct/var-recentmodifiedTime.dwl" variableName="recentmodifiedTime" />
 			</ee:variables>
 		</ee:transform>
 		<choice doc:name="Choice" doc:id="1f4d2d7e-0043-42ec-8630-a13b05260fcc" >
@@ -63,8 +51,7 @@ output application/json
 		</choice>
 	</sub-flow>
 	<flow name="contact-leadFlow" doc:id="b25100c3-a02c-4092-abde-43eabded5e9b" >
-		<http:listener doc:name="Listener" doc:id="289f7ff5-babe-4105-b07f-508e8072a4bf" config-ref="HTTP_Listener_config" path="/contact1" />
-		<ee:transform doc:name="Transform Message" doc:id="2d596e54-6e42-40fe-b6da-92cad60e628f" >
+		<ee:transform doc:name="Inbound Payload" doc:id="2d596e54-6e42-40fe-b6da-92cad60e628f" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
@@ -76,7 +63,7 @@ payload default []]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
 		<http:request method="POST" doc:name="get aggregated contacts by vid" doc:id="bfa0fe04-abd6-4c93-abb1-97134a3239be" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/contact/aggregated" responseTimeout="600000" targetValue="#[payload default []]"/>
-		<ee:transform doc:name="Transform Message" doc:id="ba432a63-5554-4807-bedf-f857b3f91576" >
+		<ee:transform doc:name="Set Response Payload" doc:id="ba432a63-5554-4807-bedf-f857b3f91576" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
@@ -100,17 +87,14 @@ payload default []]]></ee:set-payload>
 				</otherwise>
 			</choice>
 		</parallel-foreach>
-		<ee:transform doc:name="Transform Message" doc:id="417a892a-1898-4bab-b364-cf35d314979a" >
+		<ee:transform doc:name="Final Response" doc:id="417a892a-1898-4bab-b364-cf35d314979a" >
 			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
----
-payload..payload]]></ee:set-payload>
+				<ee:set-payload resource="dwl/conatct/msg-final-response.dwl" />
 			</ee:message>
 		</ee:transform>
 	</flow>
 	<flow name="contact-lead-sync-validations" doc:id="8612e3af-4c08-431b-af89-48834e5fce94" >
-		<ee:transform doc:name="associatedcompanyid" doc:id="c8b4231c-43f1-4f12-83da-657029239fe7" >
+		<ee:transform doc:name="Set Ids" doc:id="c8b4231c-43f1-4f12-83da-657029239fe7" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
@@ -118,27 +102,17 @@ output application/json
 payload]]></ee:set-payload>
 			</ee:message>
 			<ee:variables >
-				<ee:set-variable variableName="id" ><![CDATA[%dw 2.0
-output application/json
----
-{
-	"vid": payload.vid,
-	"ownerId": payload.properties.hubspot_owner_id.value,
-	"associatedcompanyid": payload.properties.associatedcompanyid.value,
-	"email": payload.properties.email.value,
-//	"emailDomain": payload.properties.hs_email_domain.value default "",
-	"emailDomain": "zuvio.com"
-}]]></ee:set-variable>
+				<ee:set-variable resource="dwl/conatct/var-Ids.dwl" variableName="id" />
 			</ee:variables>
 		</ee:transform>
-		<choice doc:name="Choice" doc:id="ca57c5c1-9fdc-4087-9de9-adf834ceeb8e" >
+		<choice doc:name="Is associatedcompanyid = null ?" doc:id="ca57c5c1-9fdc-4087-9de9-adf834ceeb8e" >
 			<when expression="#[!isEmpty(vars.id.associatedcompanyid)]" >
-				<http:request method="GET" doc:name="fetch HS comapny" doc:id="b3e5edbd-8640-4fc7-940a-5a1adfe08ae2" url='#["https://api.hubapi.com/companies/v2/companies/" ++ vars.id.associatedcompanyid as String]' target="companyDetails" responseTimeout="#[p('hubspot-sapi.responseTimeout')]">
-					<http:headers ><![CDATA[#[output application/java
+				<http:request method="GET" doc:name="Request HS to get Company Details" doc:id="7d063b55-4d1a-4e78-98c6-65e53ae98783" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/company/{companyid}" target="companyDetails">
+					<http:uri-params><![CDATA[#[output application/java
 ---
 {
-	"Authorization" : "Bearer pat-na1-9b2d3e73-5a06-41a7-acf9-28afb4e45d8d"
-}]]]></http:headers>
+	companyid : vars.id.associatedcompanyid as String
+}]]]></http:uri-params>
 				</http:request>
 				<ee:transform doc:name="set domain" doc:id="d780b3a8-e84d-41af-a4da-c1f70972fde2" >
 					<ee:message />
@@ -319,19 +293,9 @@ payload.properties.leadsource.value]]></ee:set-variable>
 		</choice>
 	</flow>
 	<flow name="salesforce-Ids-sync-backFlow-old" doc:id="818666d8-4872-4a78-96f4-cde7e64b5448" >
-		<ee:transform doc:name="Transform Message" doc:id="202c0379-2c49-49da-b3f2-fd65043ca7b1" >
+		<ee:transform doc:name="Set HS expected Payload" doc:id="202c0379-2c49-49da-b3f2-fd65043ca7b1" >
 			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
----
-{
-  "properties": payload pluck ( 
-    { 
-        "property": $$,
-        "value": $
-    }
-  )
-}]]></ee:set-payload>
+				<ee:set-payload resource="dwl/conatct/msg-hs-expected-payload.dwl" />
 			</ee:message>
 		</ee:transform>
 		<http:request method="POST" doc:name="Request" doc:id="f9a1d5f8-91b8-4422-929d-4ceb3babcc16" url='#["https://api.hubapi.com/contacts/v1/contact/vid/" ++ vars.id.vid as String ++ "/profile"]' target="hubspotResponse" >
@@ -341,12 +305,9 @@ output application/json
 	"Authorization" : "Bearer pat-na1-9b2d3e73-5a06-41a7-acf9-28afb4e45d8d"
 }]]]></http:headers>
 		</http:request>
-		<ee:transform doc:name="Transform Message" doc:id="42564f1b-28fc-417e-a12a-52f132769fe2" >
+		<ee:transform doc:name="Set Response Payload" doc:id="42564f1b-28fc-417e-a12a-52f132769fe2" >
 			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
----
-payload.properties[0]]]></ee:set-payload>
+				<ee:set-payload resource="dwl/conatct/msg-sync-back-response-payload.dwl" />
 			</ee:message>
 		</ee:transform>
 	</flow>
@@ -355,10 +316,7 @@ payload.properties[0]]]></ee:set-payload>
 			<ee:message >
 			</ee:message>
 			<ee:variables >
-				<ee:set-variable variableName="querytobeexecuted" ><![CDATA[%dw 2.0
-output application/json
----
-"Select Id, Lifecycle_Stage__c, LastModifiedDate from Contact where Id IN ('" ++ (vars.contactId.Id joinBy  ("','") ) ++  "')"]]></ee:set-variable>
+				<ee:set-variable resource="dwl/conatct/var-querytobeexecuted-choose-a-contact-from-more-than-one.dwl" variableName="querytobeexecuted" />
 			</ee:variables>
 		</ee:transform>
 		<http:request method="GET" doc:name="Get SF contact details" doc:id="42ea41b5-8058-4c47-a656-4456c0125e3f" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/genericquery" responseTimeout="#[p('salesforce-sapi.responseTimeout')]" target="contactId">
@@ -372,10 +330,7 @@ output application/json
 			<ee:message >
 			</ee:message>
 			<ee:variables >
-				<ee:set-variable variableName="contactId" ><![CDATA[%dw 2.0
-output application/json
----
-if(isEmpty(vars.contactId filter ($.Lifecycle_Stage__c ~= "Customer"))) (vars.contactId orderBy($.LastModifiedDate))[-1].Id else ((vars.contactId filter ($.Lifecycle_Stage__c ~= "Customer")) orderBy($.LastModifiedDate))[-1].Id]]></ee:set-variable>
+				<ee:set-variable resource="dwl/conatct/var-contactId-choose-a-contact-from-more-than-one.dwl" variableName="contactId" />
 			</ee:variables>
 		</ee:transform>
 		<logger level="INFO" doc:name="Logger" doc:id="71750e04-e963-43d7-9911-4dfc3b6c7bab" message="#[vars.contactId]"/>
@@ -384,10 +339,7 @@ if(isEmpty(vars.contactId filter ($.Lifecycle_Stage__c ~= "Customer"))) (vars.co
 		<ee:transform doc:name="Set querytobeexecuted" doc:id="5d3a3a1c-6d60-465a-805e-539e8ef23829" >
 			<ee:message />
 			<ee:variables >
-				<ee:set-variable variableName="querytobeexecuted" ><![CDATA[%dw 2.0
-output application/json
----
-"Select Id, Lifecycle_Stage__c, LastModifiedDate from Account where Id IN ('" ++ (vars.accountId.Id joinBy  ("','") ) ++  "')"]]></ee:set-variable>
+				<ee:set-variable resource="dwl/conatct/var-querytobeexecuted-choose-a-account-from-more-than-one.dwl" variableName="querytobeexecuted" />
 			</ee:variables>
 		</ee:transform>
 		<http:request method="GET" doc:name="Get SF associated Account details" doc:id="7016b40c-ceb4-4b0e-afb4-6b391dd278b9" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/genericquery" responseTimeout="#[p('salesforce-sapi.responseTimeout')]" target="accountId" >
@@ -401,21 +353,15 @@ output application/json
 			<ee:message >
 			</ee:message>
 			<ee:variables >
-				<ee:set-variable variableName="accountId" ><![CDATA[%dw 2.0
-output application/json
----
-if(isEmpty(vars.accountId filter ($.Lifecycle_Stage__c ~= "Customer"))) (vars.accountId orderBy($.LastModifiedDate))[-1].Id else ((vars.accountId filter ($.Lifecycle_Stage__c ~= "Customer")) orderBy($.LastModifiedDate))[-1].Id]]></ee:set-variable>
+				<ee:set-variable resource="dwl/conatct/var-accountId-choose-a-account-from-more-than-one.dwl" variableName="accountId" />
 			</ee:variables>
 		</ee:transform>
 		<logger level="INFO" doc:name="Logger" doc:id="8a537ead-91e7-4295-86c3-7da030913b4a" message="#[vars.accountId]"/>
 	</sub-flow>
 	<flow name="create-account-contact-leadFlow" doc:id="f6cca89a-5b44-409a-8ecc-9cc5ef89196f" >
-		<ee:transform doc:name="Transform Message" doc:id="2fadbe13-ba7e-4a46-aa7f-14a205106102" >
+		<ee:transform doc:name="Set CompanyId" doc:id="2fadbe13-ba7e-4a46-aa7f-14a205106102" >
 			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
----
-vars.id.associatedcompanyid]]></ee:set-payload>
+				<ee:set-payload resource="dwl/conatct/msg-associatedcompanyid-create-account-flow.dwl" />
 			</ee:message>
 		</ee:transform>
 		<flow-ref doc:name="Flow Ref to company-to-accountFlow" doc:id="9ccf88ec-391c-46b4-be7e-304b001254fb" name="company-to-accountFlow"/>
