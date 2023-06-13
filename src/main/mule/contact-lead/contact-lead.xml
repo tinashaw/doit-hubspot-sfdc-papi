@@ -6,15 +6,15 @@
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
 http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
-	<flow name="contact-schedularFlow" doc:id="b92f4993-be0a-4751-83cb-08b56fa7a202">
+	<flow name="contact-schedularFlow" doc:id="b92f4993-be0a-4751-83cb-08b56fa7a202" initialState="started">
 		<scheduler doc:name="Scheduler" doc:id="1dcde066-d2e2-49f8-b99b-3e9b317f65ce" >
 			<scheduling-strategy >
-				<fixed-frequency timeUnit="DAYS"/>
+				<fixed-frequency timeUnit="SECONDS"/>
 			</scheduling-strategy>
 		</scheduler>
-		<os:clear doc:name="Clear objectstore" doc:id="3c81391b-1d2f-4250-b5bc-3087964071fb" objectStore="Object_store"/>
+<!-- [STUDIO:"Clear objectstore"]		<os:clear doc:name="Clear objectstore" doc:id="3c81391b-1d2f-4250-b5bc-3087964071fb" objectStore="Object_store"/> [STUDIO] -->
 		<os:retrieve doc:name="Retrieve minTime" doc:id="43df15fa-0338-451c-becc-47c4aea33f05" key="minTime" objectStore="Object_store" target="minTime">
-			<os:default-value><![CDATA[#["1685001414195"]]]></os:default-value>
+			<os:default-value><![CDATA[#["1686261766812"]]]></os:default-value>
 		</os:retrieve>
 		<set-variable value='#[""]' doc:name="Set Variable timeOffset" doc:id="a99edfb1-e079-4e4f-9169-fb2f64761059" variableName="timeOffset"/>
 		<flow-ref doc:name="Flow Ref to contact-leadSub_Flow" doc:id="15b1e537-e3ec-4b9d-9c9f-faedaa3ce75f" name="contact-leadSub_Flow"/>
@@ -52,7 +52,14 @@ output application/json
 		</ee:transform>
 		<choice doc:name="Choice" doc:id="1f4d2d7e-0043-42ec-8630-a13b05260fcc" >
 			<when expression="#[sizeOf(vars.recentmodifiedIds) != p('url.recentmodifiedcount') as Number]">
-				<flow-ref doc:name="Flow Ref to contact-leadFlow" doc:id="4e6c2c75-b5fe-4909-974a-dfd58796922a" name="contact-leadFlow"/>
+				<flow-ref doc:name="Flow Ref to contact-leadFlow" doc:id="4e6c2c75-b5fe-4909-974a-dfd58796922a" name="contact-leadFlow" target="contactLeadResponse"/>
+				<choice doc:name="Choice" doc:id="095b598f-9a57-4945-a1c9-67b7aea1f485">
+					<when expression="#[sizeOf(payload) &gt; 0]">
+						<async doc:name="Async" doc:id="5c4b545e-71e8-492d-87a6-c8ad86ec6f9b">
+							<flow-ref doc:name="Flow Ref to form-task-flow" doc:id="aa875e14-2fa9-4fed-8277-d98c30df31c2" name="form-task-flow" />
+				</async>
+					</when>
+				</choice>
 				<os:store doc:name="Store minTime" doc:id="ae422d57-4f61-466c-8512-c3c27397de0e" key="minTime" objectStore="Object_store">
 					<os:value><![CDATA[#[vars.recentmodifiedTime]]]></os:value>
 				</os:store>
@@ -71,7 +78,7 @@ output application/json
 import * from dw::core::Arrays
 ---
 //slice(payload, 13, 14) default []
-//[6374]
+//[14451]
 payload default []]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
