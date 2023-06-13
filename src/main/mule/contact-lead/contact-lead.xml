@@ -87,10 +87,14 @@ payload default []]]></ee:set-payload>
 			<choice doc:name="Choice" doc:id="b0cc60d6-f977-4de0-ad43-912eed6c0271" >
 				<when expression="#[!isEmpty(payload.properties.sfdc_lead_id.value)]" >
 					<logger level="INFO" doc:name="Update lead" doc:id="3bf380c2-8f20-4fe4-b828-8fe287bfe56c" message="Update lead" />
+					<set-variable value='#[payload.properties.sfdc_account_id.value default ""]' doc:name="accountId" doc:id="043c1d9d-d723-45cb-bde3-9ddc8f4c8db5" variableName="accountId"/>
+					<set-variable value="#[payload.vid]" doc:name="Set Variable vid" doc:id="f8f56902-891c-4247-bd2f-1f6459bd313e" variableName="vid"/>
 					<flow-ref doc:name="Flow Ref to update lead in sfdc" doc:id="6349ac28-7e57-410d-bbb5-4228dfb578ef" name="update-lead-in-sfdc"/>
 				</when>
 				<when expression="#[!isEmpty(payload.properties.sfdc_contact_id.value)]" >
 					<logger level="INFO" doc:name="Update contact" doc:id="1afd95c8-9c7b-491d-8fab-e06a4764bfdb" message="Update contact" />
+					<set-variable value='#[payload.properties.sfdc_account_id.value default ""]' doc:name="accountId" doc:id="3a0a872e-6f25-439e-a520-524b7a1d9489" variableName="accountId"/>
+					<set-variable value="#[payload.vid]" doc:name="Set Variable vid" doc:id="38de5c5e-da84-4aba-9d16-9ca7919a616e" variableName="vid"/>
 					<flow-ref doc:name="Flow Ref to update contact in sfdc" doc:id="7d2cdb34-71d5-4019-8497-cf1d78806da1" name="update-contact-in-sfdc"/>
 				</when>
 				<otherwise >
@@ -310,7 +314,7 @@ payload.properties.leadsource.value]]></ee:set-variable>
 				<ee:set-payload resource="dwl/conatct/msg-hs-expected-payload.dwl" />
 			</ee:message>
 		</ee:transform>
-		<http:request method="POST" doc:name="Request" doc:id="f9a1d5f8-91b8-4422-929d-4ceb3babcc16" url='#["https://api.hubapi.com/contacts/v1/contact/vid/" ++ vars.id.vid as String ++ "/profile"]' target="hubspotResponse" >
+		<http:request method="POST" doc:name="Request" doc:id="f9a1d5f8-91b8-4422-929d-4ceb3babcc16" url='#["https://api.hubapi.com/contacts/v1/contact/vid/" ++ (vars.id.vid default vars.vid) as String ++ "/profile"]' target="hubspotResponse" >
 			<http:headers ><![CDATA[#[output application/java
 ---
 {
@@ -376,6 +380,6 @@ payload.properties.leadsource.value]]></ee:set-variable>
 				<ee:set-payload resource="dwl/conatct/msg-associatedcompanyid-create-account-flow.dwl" />
 			</ee:message>
 		</ee:transform>
-		<flow-ref doc:name="Flow Ref to company-to-accountFlow" doc:id="9ccf88ec-391c-46b4-be7e-304b001254fb" name="company-to-accountFlow"/>
+		<flow-ref doc:name="Flow Ref to created-company-syncFlow" doc:id="9ccf88ec-391c-46b4-be7e-304b001254fb" name="created-company-syncFlow"/>
 	</flow>
 </mule>
