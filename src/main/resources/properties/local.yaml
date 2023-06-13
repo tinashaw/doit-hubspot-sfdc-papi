@@ -11,7 +11,20 @@ salesforce:
     username: "udit.khare+sandbox1@apisero.com"
     authorization_url: "https://test.salesforce.com/services/Soap/u/55.0"
 
-
+url:
+  recentmodifiedcount: "20"
+  
+parallelForEach:
+  contact-lead:
+    maxConcurrency: "5"
+  company:
+    maxConcurrency: "5"
+form:
+  Type: "Hubspot Form Fill"
+  RecordTypeId : "01276000000CrWY"
+  AssignedTo :  "00576000001aTlhAAE" 
+  Status : "Completed" 
+    
 recentcreatedcontact:
   lastmodifiedtime: "1682248414000"
   

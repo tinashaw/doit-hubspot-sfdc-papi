@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd 
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd">
+	<flow name="form-task-flow" doc:id="2226da81-0893-4f3d-9286-f3259d759608" >
+		<http:listener doc:name="Listener" doc:id="551338bb-3b1f-484b-b30a-9634e21bfa4a" config-ref="HTTP_Listener_config" path="/testform"/>
+		<logger level="INFO" doc:name="Log Started" doc:id="1875894b-63eb-4802-a351-054b28e1833b" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  env : Mule::p('env'),&#10;  transactionId : correlationId,&#10;  applicationName : Mule::p('app.name'),&#10;  flowName : &quot;form-task-flow&quot;,&#10;  status: &quot;Started&quot;,&#10;  timestamp : now()&#10;}]"/>
+		<http:request method="POST" doc:name="get aggregated contacts by vid" doc:id="a9853634-8bbd-4615-925a-61347baf15aa" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/contact/aggregated" responseTimeout="600000" targetValue="#[payload default []]" />
+		<ee:transform doc:name="Filter formSubmittedContact" doc:id="b091e7ac-7006-4d5f-94cd-8d40ac642810">
+			<ee:message>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="formSubmittedContact" ><![CDATA[%dw 2.0
+output application/json
+---
+payload filter ((item, index) -> sizeOf(item."form-submissions") > 0 )]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<choice doc:name="Choice" doc:id="c398626d-51e4-4556-a7b6-a0bb1e536e2c" >
+			<when expression="#[vars.formSubmittedContact != null]">
+				<ee:transform doc:name="Mapping" doc:id="99b6137b-6400-47f6-8d64-8153a25f6995">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+vars.formSubmittedContact map ((item, index) -> 
+{
+	
+	Subject : item."form-submissions".title[0] ,
+	Type : p('form.Type'),
+	ActivityDate : (item."form-submissions".timestamp[0] as Number as DateTime {unit : "milliseconds"}) as Date ,
+	RecordTypeId : p('form.RecordTypeId') ,      //"01276000000CrWY",
+	OwnerId : p('form.AssignedTo'),
+	Status : p('form.Status'),
+	WhatId : item.properties.sfdc_account_id.value,
+	WhoId : if( item.properties.sfdc_contact_id.value != null) item.properties.sfdc_contact_id.value else item.properties.sfdc_lead_id.value
+	
+	})]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+				<parallel-foreach doc:name="Parallel For Each" doc:id="b2a9dd5d-2d6a-4e32-aaad-cd02138dfeb7" >
+					<ee:transform doc:name="Transform Message" doc:id="9dd691e1-fa6e-498c-a9c8-be70fc85b37f" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+[payload]]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+					<choice doc:name="Choice" doc:id="2f492169-2d01-4c32-b755-4884772d6ca7" >
+						<when expression="#[payload.WhatId != null and payload.WhoId != null]">
+							<http:request method="GET" doc:name="Lookup for same Existing Task" doc:id="ab991543-dceb-4e07-919d-7bf182b053ac" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/genericquery" target="sfTask">
+						<http:query-params><![CDATA[#[output application/java
+---
+{
+	querytobeexecuted : "SELECT Fields(ALL) FROM Task where Subject ='"++ payload[0].Subject ++ "' and WhatId ='" ++ payload[0].WhatId ++ "' and WhoId = '"++ payload[0].WhoId ++ "' and CreatedById= '" ++ payload[0].OwnerId ++ "' LIMIT 100"
+	
+	}]]]></http:query-params>
+					</http:request>
+							<choice doc:name="Choice" doc:id="f3a0b714-71c2-450f-8078-52261dc21616">
+						<when expression="#[sizeOf(vars.sfTask) &lt; 1]">
+							<http:request method="POST" doc:name="Request to create task" doc:id="132b4f9a-fc71-44e1-9f12-de7876f68a34" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/task/create" sendCorrelationId="ALWAYS" responseTimeout="-1" />
+							<ee:transform doc:name="Set Created Task Ids" doc:id="1babeeff-9868-45e6-80ac-462834b7b6b4">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+"Created Task Id" : payload.items.payload.id]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+							<logger level="INFO" doc:name="Info Log" doc:id="a670b007-6129-49cd-8c28-c1fc9b9bd730" message="#[payload]" />
+						</when>
+						<otherwise>
+							<logger level="INFO" doc:name="Info Log" doc:id="96171637-3d95-4793-9c72-051702346599" message="Task is Already present for #[payload]" />
+						</otherwise>
+					</choice>
+						</when>
+						<otherwise >
+							<logger level="INFO" doc:name="Info Log" doc:id="dc1ebafa-b04f-4361-a8eb-d4484a5a381d" message="WhatId or WhoId is Null"/>
+						</otherwise>
+					</choice>
+				</parallel-foreach>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Info Log" doc:id="8335f0ac-e4eb-459c-b13b-cb4f4355c4be" message="No Form Submission Found"/>
+			</otherwise>
+		</choice>
+		<logger level="INFO" doc:name="Log Completed" doc:id="3c514e4a-1d81-49bb-bba1-afd30ef1b6c1" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  env : Mule::p('env'),&#10;  transactionId : correlationId,&#10;  applicationName : Mule::p('app.name'),&#10;  flowName : &quot;form-task-flow&quot;,&#10;  status: &quot;Completed&quot;,&#10;  timestamp : now()&#10;}]"/>
+	
+</flow>
+</mule>

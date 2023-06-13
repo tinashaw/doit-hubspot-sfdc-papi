@@ -41,6 +41,18 @@ http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/cu
 		<choice doc:name="Choice" doc:id="1f4d2d7e-0043-42ec-8630-a13b05260fcc" >
 			<when expression="#[sizeOf(vars.recentmodifiedIds) != p('url.recentmodifiedcount') as Number]">
 				<flow-ref doc:name="Flow Ref to contact-leadFlow" doc:id="4e6c2c75-b5fe-4909-974a-dfd58796922a" name="contact-leadFlow"/>
+				
+				<choice doc:name="Choice" doc:id="15eaa9e0-56f1-432c-bdf5-838866bfea8d">
+					<when expression="#[sizeOf(payload) &gt; 0]">
+						<async doc:name="Async" doc:id="1ddba2e2-983f-4ce9-84f0-5ca9bbf6088a">
+							<flow-ref doc:name="Flow Ref to form-task-flow" doc:id="5f546cf9-e21a-4ea2-8a96-1d96c8a365de" name="form-task-flow" />
+				</async>
+					</when>
+					<otherwise >
+						<logger level="INFO" doc:name="Logger" doc:id="f8c20492-6ebe-4138-b001-8ca3479b4a14" />
+					</otherwise>
+				</choice>
+				
 				<os:store doc:name="Store minTime" doc:id="ae422d57-4f61-466c-8512-c3c27397de0e" key="minTime" objectStore="Object_store">
 					<os:value><![CDATA[#[vars.recentmodifiedTime]]]></os:value>
 				</os:store>
