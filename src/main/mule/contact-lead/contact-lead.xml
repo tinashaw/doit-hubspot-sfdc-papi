@@ -6,15 +6,15 @@
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
 http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
-	<flow name="contact-schedularFlow" doc:id="b92f4993-be0a-4751-83cb-08b56fa7a202" initialState="stopped">
+	<flow name="contact-schedularFlow" doc:id="b92f4993-be0a-4751-83cb-08b56fa7a202" initialState="started">
 		<scheduler doc:name="Scheduler" doc:id="1dcde066-d2e2-49f8-b99b-3e9b317f65ce" >
 			<scheduling-strategy >
 				<fixed-frequency timeUnit="DAYS"/>
 			</scheduling-strategy>
 		</scheduler>
-		<os:clear doc:name="Clear objectstore" doc:id="3c81391b-1d2f-4250-b5bc-3087964071fb" objectStore="Object_store"/>
+<!-- [STUDIO:"Clear objectstore"]		<os:clear doc:name="Clear objectstore" doc:id="3c81391b-1d2f-4250-b5bc-3087964071fb" objectStore="Object_store"/> [STUDIO] -->
 		<os:retrieve doc:name="Retrieve minTime" doc:id="43df15fa-0338-451c-becc-47c4aea33f05" key="minTime" objectStore="Object_store" target="minTime">
-			<os:default-value><![CDATA[#["1685001414195"]]]></os:default-value>
+			<os:default-value><![CDATA[#["1686261872865"]]]></os:default-value>
 		</os:retrieve>
 		<set-variable value='#[""]' doc:name="Set Variable timeOffset" doc:id="a99edfb1-e079-4e4f-9169-fb2f64761059" variableName="timeOffset"/>
 		<flow-ref doc:name="Flow Ref to contact-leadSub_Flow" doc:id="15b1e537-e3ec-4b9d-9c9f-faedaa3ce75f" name="contact-leadSub_Flow"/>
@@ -58,8 +58,8 @@ output application/json
 import * from dw::core::Arrays
 ---
 //slice(payload, 13, 14) default []
-//[6374]
-payload default []]]></ee:set-payload>
+[14451]
+//payload default []]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
 		<http:request method="POST" doc:name="get aggregated contacts by vid" doc:id="bfa0fe04-abd6-4c93-abb1-97134a3239be" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/contact/aggregated" responseTimeout="600000" targetValue="#[payload default []]"/>

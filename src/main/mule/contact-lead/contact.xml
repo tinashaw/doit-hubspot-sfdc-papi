@@ -39,7 +39,7 @@ vars.accountId default ""]]></ee:set-variable>
 			<ee:variables>
 			</ee:variables>
 		</ee:transform>
-		<logger level="INFO" doc:name="Log Contact Created" doc:id="6374ded6-7269-4947-a045-d87e538d05f2" message="Account Created and AccountId is #[payload.sfdc_account_id]" />
+		<logger level="INFO" doc:name="Log Contact Created" doc:id="6374ded6-7269-4947-a045-d87e538d05f2" message="Contact Created and ContactId is #[payload.sfdc_contact_id]" />
 				<flow-ref doc:name="Flow Ref to salesforce-Ids-sync-backFlow" doc:id="6997a27b-4881-46d4-8979-8fcecc74d549" name="salesforce-Ids-sync-backFlow-old"/>
 			
 </when>
@@ -62,7 +62,7 @@ vars.accountId default ""]]></ee:set-variable>
 				<flow-ref doc:name="Flow Ref to get salesforce ownerIdFlow" doc:id="d554822e-54f8-4b85-80c1-a84ffd6a3ff4" name="get-salesforce-ownerIdFlow" target="hubspot_owner_id" />
 			</when>
 			<otherwise>
-				<logger level="INFO" doc:name="Logger" doc:id="313136bd-8bf5-4bd1-937d-03a315fe9ed5" message='#["ownerId is null"]' />
+				<logger level="INFO" doc:name="ownerId is null" doc:id="313136bd-8bf5-4bd1-937d-03a315fe9ed5" message='#["ownerId is null"]' />
 			</otherwise>
 		</choice>
 		<ee:transform doc:name="Mappaing" doc:id="fbdcf5ef-80d1-40e8-87fc-000016eed8d3" >
@@ -74,17 +74,17 @@ vars.accountId default ""]]></ee:set-variable>
 		<http:request method="POST" doc:name="Request SF to update company" doc:id="40eb3c84-a9da-4364-9990-63281c5f5a23" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/contact/update" responseTimeout="-1"/>
 		<choice doc:name="If Successful ?" doc:id="b2957610-0718-4dc5-bcb1-019a5e086081" >
 			<when expression="#[payload.successful]" >
-				<ee:transform doc:name="Transform Message" doc:id="aba9b228-9814-4855-8c8c-47408230277f" >
+				<ee:transform doc:name="Successful Response" doc:id="aba9b228-9814-4855-8c8c-47408230277f" >
 					<ee:message >
 						<ee:set-payload resource="dwl/conatct/msg-update-contact-sync-back.dwl" />
 					</ee:message>
 					<ee:variables />
 				</ee:transform>
-				<logger level="INFO" doc:name="Logger" doc:id="050f78ee-965f-47eb-83ff-3e4d384184d4" message="Contact Updated in SF #[payload.items[0].payload.id] " />
+				<logger level="INFO" doc:name="Log Contact Updated in SF" doc:id="050f78ee-965f-47eb-83ff-3e4d384184d4" message="Contact Updated in SF #[payload.sfdc_contact_id] " />
 				<flow-ref doc:name="Flow Ref to salesforce-Ids-sync-backFlow" doc:id="c87e4956-8bc2-4513-be63-09114763a122" name="salesforce-Ids-sync-backFlow-old" />
 			</when>
 			<otherwise >
-				<ee:transform doc:name="Transform Message" doc:id="90817a8b-864f-4aac-8b41-2e9808c5910d" >
+				<ee:transform doc:name="Failed Response" doc:id="90817a8b-864f-4aac-8b41-2e9808c5910d" >
 					<ee:message >
 						<ee:set-payload resource="dwl/conatct/msg-update-contact-error-message.dwl" />
 					</ee:message>

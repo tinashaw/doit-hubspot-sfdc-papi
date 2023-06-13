@@ -1,0 +1,4 @@
+%dw 2.0
+
+type auto_38d273f9_d95e_4c49_9341_9c3d30ca0e81_Output_Variables_recentmodifiedContacts = Any
+

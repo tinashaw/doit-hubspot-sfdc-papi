@@ -40,10 +40,10 @@ salesforce-sapi:
   baseurl: ""
 
 hubspot-sapi:
-#  host: "doit-hubspot-sapi.us-e2.cloudhub.io"
-#  port: ""         #for https, Otherwise for http:8081       
-  host: "localhost"
-  port: "8081"
+  host: "doit-hubspot-sapi.us-e2.cloudhub.io"
+  port: ""         #for https, Otherwise for http:8081       
+#  host: "localhost"
+#  port: "8081"
   protocol: "HTTP"
   basepath: "/api"
   responseBufferSize: "1024"

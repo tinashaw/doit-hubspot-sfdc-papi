@@ -13,8 +13,8 @@ var picklist = readUrl("classpath://picklist.json", "application/json")
 	"Fax" : payload.properties.fax.value,
 	("Hot_Lead__c": payload.properties.hot_lead.value as Boolean )if(payload.properties.hot_lead.value != ""),//checkbox
     ("Buying_Role__c": picklist.contact.hs_buying_role[(payload.properties.hs_buying_role.value)])if(payload.properties.hs_buying_role.value != null),
-	"HasOptedOutOfEmail": if(payload.properties.no_more.value != null) "true" else "false",
-    "Hubspot_Lead_Status__c" : payload.properties.hs_lead_status.value,
+	"HasOptedOutOfEmail": if(payload.properties.no_more.value != null) true else false,
+    ("Hubspot_Lead_Status__c" : picklist.contact.Hubspot_Lead_Status__c[(payload.properties.hs_lead_status.value)])if(payload.properties.hs_lead_status.value != null),
 	"Persona__c" : payload.properties.hs_persona.value,
 	("OwnerId": vars.hubspot_owner_id)if(vars.hubspot_owner_id != null),
 	"Lead_Score__c" : payload.properties.hubspotscore.value,

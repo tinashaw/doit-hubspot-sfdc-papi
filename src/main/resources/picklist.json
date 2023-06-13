@@ -108,16 +108,16 @@
 				"Other": "OTHER"
 		},
 		"Hubspot_Lead_Status__c": {
-				"In Progress": "IN_PROGRESS",
-				"Accepted": "Accepted",
-				"Rejected - Existing deal/customer": "Rejected - Existing deal/customer",
-				"Rejected - Competitor/Partner": "Rejected - Competitor/Partner",
-				"Rejected - No Response": "Rejected - No Response",
-				"Rejected - Not a Sales Inquiry/Other": "REJECTED_NOT_SALES",
-				"Open": "OPEN",
-				"New": "NEW",
-				"Connected": "CONNECTED",
-				"Discovery Call Scheduled - Create deal": "Discovery Call Scheduled - Create deal"
+				"IN_PROGRESS":"In Progress",
+				"Accepted":"Accepted",
+				"Rejected - Existing deal/customer":"Rejected - Existing deal/customer",
+				"Rejected - Competitor/Partner":"Rejected - Competitor/Partner",
+				"Rejected - No Response":"Rejected - No Response",
+				"REJECTED_NOT_SALES":"Rejected - Not a Sales Inquiry/Other",
+				"OPEN":"Open",
+				"NEW":"New",
+				"CONNECTED":"Connected",
+				"Discovery Call Scheduled - Create deal":"Discovery Call Scheduled - Create deal"
 		},
 		"hs_persona": {
 				"persona_5":"Demo Dan",

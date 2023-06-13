@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="campaign-sync-schedulerFlow" doc:id="fa2173ed-d91d-4e4a-9580-086017832071" initialState="stopped">
+		<scheduler doc:name="Scheduler" doc:id="73f061f0-1de4-484d-b930-2f839b696ec7" >
+			<scheduling-strategy >
+				<fixed-frequency timeUnit="MINUTES"/>
+			</scheduling-strategy>
+		</scheduler>
+		<os:retrieve doc:name="Retrieve minTimeCampaign" doc:id="9aef4f94-a805-4f96-ac5a-e4f3fd75cd5e" key="minTimeCampaign" objectStore="Object_store" target="minTimeCampaign">
+			<os:default-value ><![CDATA[#["1686261872865"]]]></os:default-value>
+		</os:retrieve>
+		<set-variable value='#[""]' doc:name="Set Variable timeOffset" doc:id="616b1a1b-6421-4730-aad0-94fcd2803987" variableName="timeOffset"/>
+		<flow-ref doc:name="Flow Ref to campaign-syncSub_Flow" doc:id="381e6eb0-fd68-45b7-b7ad-ea7d53a02156" name="campaign-syncSub_Flow"/>
+	</flow>
+	<sub-flow name="campaign-syncSub_Flow" doc:id="24d442dc-a86e-41a2-9aff-bd223995f118" >
+		<http:request method="GET" doc:name="Request to fetch all recentmodified contacts" doc:id="f5a433ec-5049-462b-ab1a-99c4793f9367" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/contact/recentmodified" responseTimeout="#[p('hubspot-sapi.responseTimeout')]" target="recentmodifiedContacts" >
+			<http:query-params ><![CDATA[#[output application/java
+---
+{
+	"timeOffset" : vars.timeOffset,
+	"count" : p('url.recentmodifiedcount') as String
+}]]]></http:query-params>
+		</http:request>
+		<ee:transform doc:name="Aggregate vids" doc:id="a082fa9e-27bc-4b5b-a669-edab7a717597" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload default [] ++ ((vars.recentmodifiedContacts.contacts filter ((item, index) -> item.addedAt as Number > vars.minTimeCampaign as Number)).vid default [])]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable resource="dwl/conatct/var-time-offset.dwl" variableName="timeOffset" />
+				<ee:set-variable resource="dwl/conatct/var-recentmodifiedTime.dwl" variableName="recentmodifiedTime" />
+				<ee:set-variable variableName="recentmodifiedIds" ><![CDATA[%dw 2.0
+output application/json
+---
+(vars.recentmodifiedContacts.contacts filter ((item, index) -> item.addedAt as Number > vars.minTimeCampaign as Number)).vid]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<choice doc:name="Choice" doc:id="52e931de-1a3c-4ff7-ae06-903529e5eaf9" >
+			<when expression="#[sizeOf(vars.recentmodifiedIds) != p('url.recentmodifiedcount') as Number]" >
+				<flow-ref doc:name="Flow Ref to campaign-syncFlow" doc:id="e4bab8f5-c8a9-4c7c-8658-e2f905b0681d" name="campaign-syncFlow" />
+				<os:store doc:name="Store minTimeCampaign" doc:id="22e60606-9650-49d2-a0c6-fcc6fa11fbd8" key="minTimeCampaign" objectStore="Object_store" >
+					<os:value ><![CDATA[#[vars.recentmodifiedTime]]]></os:value>
+				</os:store>
+			</when>
+			<otherwise >
+				<flow-ref doc:name="Flow Ref to campaign-syncSub_Flow" doc:id="2c423137-e9db-4ac3-9eae-5cc559ea4cef" name="campaign-syncSub_Flow" />
+			</otherwise>
+		</choice>
+	</sub-flow>
+	<flow name="campaign-syncFlow" doc:id="38d273f9-d95e-4c49-9341-9c3d30ca0e81">
+		<ee:transform doc:name="Inbound Payload" doc:id="97ccacd6-0f8c-4964-a42b-90b3f4109a8c">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+import * from dw::core::Arrays
+---
+//slice(payload, 13, 14) default []
+//[6374]
+payload default []]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<http:request method="POST" doc:name="get aggregated contacts by vid" doc:id="4ac52d0d-be59-417d-aba6-9de3230f66b6" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/contact/aggregated" responseTimeout="600000" targetValue="#[payload default []]" />
+		<ee:transform doc:name="Set Response Payload" doc:id="81c07f59-05f5-43dc-ac86-c185eea6893d">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload default []]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<parallel-foreach doc:name="Parallel For Each" doc:id="d22a9ce8-92f5-4bb3-8605-28f163f8fd18" maxConcurrency="${parallelForEach.contact-lead.maxConcurrency}">
+			<choice doc:name="Choice" doc:id="22a2b985-1b46-4e7e-b866-f7b55c6e5b66">
+				<when expression="#[!isEmpty(payload.properties.sfdc_campaign_name.value) or !isEmpty(payload.properties.sfdc_campaign_id.value)]">
+					<ee:transform doc:name="Mapping" doc:id="63c083cd-dbfc-4d7f-b73f-8c395d137a41">
+						<ee:message>
+							<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"LeadId": payload.properties.sfdc_lead_id.value,
+	"ContactId": payload.properties.sfdc_contact_id.value,
+	"Name": payload.properties.sfdc_campaign_name.value,
+	"Status": payload.properties.sfdc_campaign_member_status.value,
+	"Id": payload.properties.sfdc_campaign_id.value
+}]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+					<flow-ref doc:name="Flow Ref to campaign-sync-checks" doc:id="2634d825-adac-4b59-b76a-8ab4ddfb3c69" name="campaign-sync-checks"/>
+				</when>
+				<otherwise>
+					<logger level="INFO" doc:name="Log No Appropriate Event" doc:id="e35b7142-96d4-49ba-a853-650eda33ab59" message='#["sfdc_campaign_name and sfdc_campaign_id both is null for contact Id: " ++ payload.vid]' />
+				</otherwise>
+			</choice>
+		</parallel-foreach>
+	</flow>
+	<sub-flow name="campaign-sync-checks" doc:id="ab827f3d-747f-4931-a9db-67a0ff88b47a" >
+		<ee:transform doc:name="Set querytobeexecuted" doc:id="cea8be51-f5cc-43a1-996d-94a865e30d40" >
+			<ee:message />
+			<ee:variables >
+				<ee:set-variable variableName="querytobeexecuted" ><![CDATA[%dw 2.0
+output application/json
+---
+"SELECT Id FROM Campaign where Name = '" ++ payload.Name as String ++ "'"]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<http:request method="GET" doc:name="Get SF campaign" doc:id="7126e3b3-cd43-484f-8569-318c1cb1ff83" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/genericquery" responseTimeout="#[p('salesforce-sapi.responseTimeout')]" target="campaignId" >
+			<http:query-params ><![CDATA[#[output application/java
+---
+{
+	"querytobeexecuted" : vars.querytobeexecuted
+}]]]></http:query-params>
+		</http:request>
+		<choice doc:name="Choice" doc:id="4ce285e7-84f5-4f12-a838-0d4380a63e76" >
+			<when expression="#[!isEmpty(vars.campaignId)]">
+				<ee:transform doc:name="Set querytobeexecuted" doc:id="3e4d0c73-201e-4c5f-9f90-5cb479553f5c" >
+					<ee:message />
+					<ee:variables >
+						<ee:set-variable variableName="querytobeexecuted" ><![CDATA[%dw 2.0
+output application/json
+---
+if(payload.ContactId != null) "SELECT Id FROM CampaignMember where CampaignId = '" ++ vars.campaignId.Id[0] as String ++ "' and ContactId = '" ++ payload.ContactId as String ++ "'" else "SELECT Id FROM CampaignMember where CampaignId = '" ++ vars.campaignId.Id[0] as String ++ "' and LeadId = '" ++ payload.LeadId as String ++ "'"
+]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+				<http:request method="GET" doc:name="Get SF CampaignMember" doc:id="9c0c7e85-fc94-4002-a738-1c76f834469b" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/genericquery" responseTimeout="#[p('salesforce-sapi.responseTimeout')]" target="campaignMemberId" >
+					<http:query-params ><![CDATA[#[output application/java
+---
+{
+	"querytobeexecuted" : vars.querytobeexecuted
+}]]]></http:query-params>
+				</http:request>
+				<choice doc:name="Choice" doc:id="7b852914-fbff-4a7f-a560-bbc6cec23acf" >
+					<when expression="#[!isEmpty(vars.campaignMemberId)]">
+						<flow-ref doc:name="Flow Ref to update-campaign-member-status" doc:id="9bd615e8-3dd0-439f-b875-f8468b466b9f" name="update-campaign-member-status"/>
+					</when>
+					<otherwise >
+						<flow-ref doc:name="Flow Ref to create-campaign-member-record" doc:id="89d25c48-54ad-47e9-825e-f02525073762" name="create-campaign-member-record"/>
+					</otherwise>
+				</choice>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="No Campaign Found" doc:id="a08b85b7-cba2-4003-80ef-f9793dd541d3" message='#["No Campaign Found with Name : " ++ payload.Name as String]'/>
+			</otherwise>
+		</choice>
+	</sub-flow>
+	<sub-flow name="create-campaign-member-record" doc:id="e6665e4d-1db6-4c58-a05e-a14d91f8e6a4" >
+		<ee:transform doc:name="Create Campaign Member Mapping" doc:id="cf75927d-a9df-4687-9acb-79b5f7f1549b" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json skipNullOn="everywhere"
+---
+[{
+	"ContactId": payload.ContactId,
+	"LeadId": payload.LeadId,
+	"Status": payload.Status,
+	"CampaignId": vars.campaignId.Id[0]
+}]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<http:request method="POST" doc:name="Create CampaignMember in salesforce" doc:id="cc3fe932-2999-420b-8007-b6d569392225" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/campaign/create" responseTimeout="#[p('salesforce-sapi.responseTimeout')]" />
+		<choice doc:name="If Successful ?" doc:id="6dc07b25-3ce2-4194-a401-4b7f06ba5177" >
+			<when expression="#[payload.successful]" >
+				<ee:transform doc:name="Successful Response" doc:id="ffb93594-fb78-4fe6-97f5-fab4df2e41c6" >
+					<ee:message >
+						<ee:set-payload resource="dwl/conatct/msg-create-contact-sync-back.dwl" />
+					</ee:message>
+					<ee:variables />
+				</ee:transform>
+				<logger level="INFO" doc:name="Log CampaignMember Created" doc:id="de42a9cd-5641-4e4f-bb7c-322e24fc56e2" message="CampaignMember Created and CampaignMemberId is #[payload.CampaignMemberId]" />
+			</when>
+			<otherwise >
+				<ee:transform doc:name="Failed Response" doc:id="2a5332d9-d2f7-461b-aba7-a01d190ec979" >
+					<ee:message >
+						<ee:set-payload resource="dwl/conatct/msg-create-contact-error-message.dwl" />
+					</ee:message>
+				</ee:transform>
+				<logger level="ERROR" doc:name="Log error message" doc:id="a15b51f3-cff2-48f0-a531-f85a2aedc8ed" message="#[payload]" />
+			</otherwise>
+		</choice>
+	</sub-flow>
+	<sub-flow name="update-campaign-member-status" doc:id="61bb3970-6473-4182-8d6a-2e64e27bd97b" >
+		<ee:transform doc:name="Set querytobeexecuted" doc:id="0ed7b113-d1fb-4cf8-aa79-85265ec2e7d3" >
+			<ee:message />
+			<ee:variables >
+				<ee:set-variable variableName="querytobeexecuted" ><![CDATA[%dw 2.0
+output application/json
+---
+"SELECT Id, Status FROM CampaignMember where Id = '" ++ vars.campaignMemberId.Id[0] as String ++ "'"]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<http:request method="GET" doc:name="Get SF CampaignMember" doc:id="ac773351-8b11-468e-89d7-83bff33bfa94" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/genericquery" responseTimeout="#[p('salesforce-sapi.responseTimeout')]" target="campaignMember" >
+			<http:query-params ><![CDATA[#[output application/java
+---
+{
+	"querytobeexecuted" : vars.querytobeexecuted
+}]]]></http:query-params>
+		</http:request>
+		<choice doc:name="Choice" doc:id="b04047b8-7eb9-4d60-93a4-8ed86d746a05" >
+			<when expression="#[vars.campaignMember.Status[0] != payload.Status]">
+				<ee:transform doc:name="Update Campaign Member Mapping" doc:id="e012bc10-abe3-4eb3-8f84-93a3a11a4f6a">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json skipNullOn="everywhere"
+---
+[{
+	"ContactId": payload.ContactId,
+	"LeadId": payload.LeadId,
+	"Status": payload.Status,
+	"CampaignId": vars.campaignId.Id[0],
+	"Id": vars.campaignMemberId.Id[0]
+}]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+				<http:request method="POST" doc:name="Request SF to update CampaignMember" doc:id="2cef9e8b-eaca-407a-922f-bebc8685666b" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/campaign/update" responseTimeout="-1" />
+				<choice doc:name="If Successful ?" doc:id="34362842-e49d-47b7-b1d5-2a33358f9090" >
+					<when expression="#[payload.successful]" >
+						<ee:transform doc:name="Successful Response" doc:id="25daa333-8ad9-4806-939a-1cb76e3a3b1c" >
+							<ee:message >
+								<ee:set-payload resource="dwl/conatct/msg-update-contact-sync-back.dwl" />
+							</ee:message>
+							<ee:variables />
+						</ee:transform>
+						<logger level="INFO" doc:name="Log CampaignMember Updated" doc:id="4dc88876-3c22-4337-922d-8696e296bd28" message="CampaignMember Updated in SF #[payload.CampaignMemberId] " />
+					</when>
+					<otherwise >
+						<ee:transform doc:name="Failed Response" doc:id="6874cabb-2171-4f67-8bdc-8c49404aeaa4" >
+							<ee:message >
+								<ee:set-payload resource="dwl/conatct/msg-update-contact-error-message.dwl" />
+							</ee:message>
+						</ee:transform>
+						<logger level="ERROR" doc:name="Log error message" doc:id="0e346d3c-5027-4918-bad4-f66290992874" message="#[payload]" />
+					</otherwise>
+				</choice>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Log No need of Updation" doc:id="25108690-cf06-4ca4-936b-dc483d7d5bc8" message='#["No need of Updation: status of Campaign in HS and SF is Same"]'/>
+			</otherwise>
+		</choice>
+	</sub-flow>
+</mule>

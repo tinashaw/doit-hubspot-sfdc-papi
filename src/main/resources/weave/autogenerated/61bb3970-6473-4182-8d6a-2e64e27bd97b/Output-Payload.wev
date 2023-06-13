@@ -1,0 +1,10 @@
+%dw 2.0
+
+type auto_61bb3970_6473_4182_8d6a_2e64e27bd97b_Output_Payload = {|
+  LeadId: Any, 
+  ContactId: Any, 
+  Name: Any, 
+  Status: Any, 
+  Id: Any
+|}
+
