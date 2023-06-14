@@ -6,21 +6,21 @@
 http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
-	<flow name="updated-company-schedularFlow" doc:id="ed3ba485-2aa0-4f34-9fd0-0f4f9c1a73a5" >
-		<scheduler doc:name="Scheduler" doc:id="fcb8b73d-84b6-4c9d-b04c-973189e941c2" >
+	<flow name="updated-company-schedular-flow" doc:id="ed3ba485-2aa0-4f34-9fd0-0f4f9c1a73a5" >
+		<scheduler doc:name="Scheduler every minute" doc:id="fcb8b73d-84b6-4c9d-b04c-973189e941c2" >
 			<scheduling-strategy >
-				<fixed-frequency timeUnit="DAYS"/>
+				<fixed-frequency timeUnit="MINUTES"/>
 			</scheduling-strategy>
 		</scheduler>
 <!-- [STUDIO:"Clear"]		<os:clear doc:name="Clear" doc:id="c4f60af1-c215-4493-9919-f81fc6f2273c" objectStore="Object_store"/> [STUDIO] -->
 		<logger level="INFO" doc:name="Log Started" doc:id="b35705c1-34f7-4263-bab6-ba6a0b0cf407" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  env : Mule::p('env'),&#10;  transactionId : correlationId,&#10;  applicationName : Mule::p('app.name'),&#10;  flowName : &quot;Hubspot company to Salesforce Account Creation flow&quot;,&#10;  status: &quot;Started&quot;,&#10;  timestamp : now()&#10;}]" />
-		<os:retrieve doc:name="Retrieve minTime" doc:id="6b30ecee-8e9e-4bde-a989-72a46939ce0c" key="minTimeCompany" objectStore="Object_store" target="minTimeCompany" >
+		<os:retrieve doc:name="Retrieve minTimeCompany" doc:id="6b30ecee-8e9e-4bde-a989-72a46939ce0c" key="minTimeCompany" objectStore="Object_store" target="minTimeCompany" >
 			<os:default-value ><![CDATA[#["1685001414195"]]]></os:default-value>
 		</os:retrieve>
 		<set-variable value='#[""]' doc:name="Set Variable offset" doc:id="f5e2c8f7-fcb9-4142-83f5-3740594d10a1" variableName="offset" />
-		<flow-ref doc:name="Flow Ref to updated-company-syncSub_Flow" doc:id="a344d2de-1242-4ab5-ad5e-ef68b9f6a358" name="Aggregate-company-Ids-Subflow" />
+		<flow-ref doc:name="Flow Ref to aggregate-company-ids-subflow" doc:id="a344d2de-1242-4ab5-ad5e-ef68b9f6a358" name="aggregate-company-ids-subflow" />
 	</flow>
-	<sub-flow name="Aggregate-company-Ids-Subflow" doc:id="11e107db-b1a0-49f0-bde5-23889193b3e4" >
+	<sub-flow name="aggregate-company-ids-subflow" doc:id="11e107db-b1a0-49f0-bde5-23889193b3e4" >
 		<http:request method="GET" doc:name="Request to fetch all recentmodified companies" doc:id="5060933f-0688-4730-8fe6-8ae209c7fece" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/company/recentmodified" responseTimeout="#[p('hubspot-sapi.responseTimeout')]" target="recentmodifiedCompanies" sendCorrelationId="ALWAYS">
 			<http:query-params ><![CDATA[#[output application/java
 ---
@@ -31,56 +31,37 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 		</http:request>
 		<ee:transform doc:name="Aggregate Company Ids" doc:id="1ef4d0d6-9e5e-410c-a92b-ec6624cda477" >
 			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
----
-payload default [] ++ ((vars.recentmodifiedCompanies.results filter ((item, index) -> item.properties.hs_lastmodifieddate.value as Number > vars.minTimeCompany as Number)).companyId default [])]]></ee:set-payload>
+				<ee:set-payload resource="dwl/company/update/msg-aggregated-companies.dwl" />
 			</ee:message>
 			<ee:variables >
-				<ee:set-variable variableName="recentmodifiedTime" ><![CDATA[%dw 2.0
-output application/json
----
-max([max(vars.recentmodifiedCompanies.results.properties.hs_lastmodifieddate.value), vars.recentmodifiedTime default 0]) default ""]]></ee:set-variable>
-				<ee:set-variable variableName="recentmodifiedIds" ><![CDATA[%dw 2.0
-output application/json
----
-(vars.recentmodifiedCompanies.results filter ((item, index) -> item.properties.hs_lastmodifieddate.value as Number > vars.minTimeCompany as Number)).companyId]]></ee:set-variable>
-				<ee:set-variable variableName="offset" ><![CDATA[%dw 2.0
-output application/json
----
-vars.recentmodifiedCompanies.offset]]></ee:set-variable>
+				<ee:set-variable resource="dwl/company/update/var-recentmodified-time.dwl" variableName="recentmodifiedTime" />
+				<ee:set-variable resource="dwl/company/update/var-recentmodified-ids.dwl" variableName="recentmodifiedIds" />
+				<ee:set-variable resource="dwl/company/update/var-offset.dwl" variableName="offset" />
 			</ee:variables>
 		</ee:transform>
-		<choice doc:name="Choice" doc:id="988accae-b8df-4ad0-ad33-f477fab9eae1" >
+		<choice doc:name="Count(recentmodifiedIds) = count" doc:id="988accae-b8df-4ad0-ad33-f477fab9eae1" >
 			<when expression="#[sizeOf(vars.recentmodifiedIds) != p('url.recentmodifiedcount') as Number]" >
 				<flow-ref doc:name="Flow Ref to contact-leadFlow" doc:id="a9cd948b-f57c-426c-8ef9-4557cdba770a" name="updated-company-checks" />
-				<os:store doc:name="Store minTime" doc:id="29389e49-e423-492b-b647-0633663f82b4" key="minTimeCompany" objectStore="Object_store" >
+				<os:store doc:name="Store minTimeCompany" doc:id="29389e49-e423-492b-b647-0633663f82b4" key="minTimeCompany" objectStore="Object_store" >
 					<os:value ><![CDATA[#[vars.recentmodifiedTime]]]></os:value>
 				</os:store>
 				<logger level="INFO" doc:name="Log Completed" doc:id="a46146c8-7ade-458d-ad9c-2b4dfb598b2f" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  env : Mule::p('env'),&#10;  transactionId : correlationId,&#10;  applicationName : Mule::p('app.name'),&#10;  flowName : &quot;Hubspot company to Salesforce Account Creation flow&quot;,&#10;  status: &quot;Completed&quot;,&#10;  timestamp : now()&#10;}]" />
 			</when>
 			<otherwise >
-				<flow-ref doc:name="Flow Ref to contact-leadSub_Flow" doc:id="78913d73-081b-4735-b12b-fa64556f737f" name="Aggregate-company-Ids-Subflow" />
+				<flow-ref doc:name="Flow Ref to contact-leadSub_Flow" doc:id="78913d73-081b-4735-b12b-fa64556f737f" name="aggregate-company-ids-subflow" />
 			</otherwise>
 		</choice>
 	</sub-flow>
 	<sub-flow name="updated-company-checks" doc:id="72817fdd-47fa-4e82-8678-0ecbedc413f7" >
 		<ee:transform doc:name="Set Inbound Payload" doc:id="4d889681-ddef-415b-920b-55f66366b233" >
 			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
-import * from dw::core::Arrays
----
-payload default []]]></ee:set-payload>
+				<ee:set-payload resource="dwl/company/update/msg-inbound-payload-update-company-check.dwl" />
 			</ee:message>
 		</ee:transform>
 		<http:request method="POST" doc:name="get aggregated companies by companyId" doc:id="8cd61d8f-e7fd-445a-b741-26385be23c5e" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/company/aggregated" responseTimeout="600000" targetValue="#[payload default []]" sendCorrelationId="ALWAYS"/>
 		<ee:transform doc:name="Set Response Payload" doc:id="a94a7060-3169-4905-91bc-23d5f0767944" >
 			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
----
-payload default []]]></ee:set-payload>
+				<ee:set-payload resource="dwl/company/update/msg-aggregated-company-update-company-check.dwl" />
 			</ee:message>
 		</ee:transform>
 		<parallel-foreach doc:name="Parallel For Each" doc:id="b07a8e91-ff94-4b3e-a5c8-b283d41acdf5" maxConcurrency="${parallelForEach.company.maxConcurrency}" >
@@ -96,10 +77,7 @@ payload default []]]></ee:set-payload>
 		</parallel-foreach>
 		<ee:transform doc:name="Final Response" doc:id="596270f1-84cd-462c-84a6-e043cf66dba2" >
 			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
----
-payload..payload]]></ee:set-payload>
+				<ee:set-payload resource="dwl/company/update/msg-final-response.dwl" />
 			</ee:message>
 		</ee:transform>
 	</sub-flow>
@@ -107,14 +85,8 @@ payload..payload]]></ee:set-payload>
 		<ee:transform doc:name="Set ownerId" doc:id="1cbd9901-a0aa-4ece-9387-2a3030c44b26" >
 			<ee:message />
 			<ee:variables >
-				<ee:set-variable variableName="ownerId" ><![CDATA[%dw 2.0
-output application/json
----
-payload.properties.hubspot_owner_id.value default ""]]></ee:set-variable>
-				<ee:set-variable variableName="companyId" ><![CDATA[%dw 2.0
-output application/json
----
-payload.companyId as String]]></ee:set-variable>
+				<ee:set-variable resource="dwl/company/update/var-companyid.dwl" variableName="companyId" />
+				<ee:set-variable resource="dwl/company/update/var-hubspot-owner-id.dwl" variableName="ownerId" />
 			</ee:variables>
 		</ee:transform>
 		<choice doc:name="is ownerId = Null ?" doc:id="50c14784-8f6c-4514-9a48-343904bd9a64">
@@ -128,45 +100,7 @@ payload.companyId as String]]></ee:set-variable>
 		</choice>
 		<ee:transform doc:name="Mapping" doc:id="fdf08bcb-2b50-4308-a7d5-e41ed342f599">
 			<ee:message>
-				<ee:set-payload><![CDATA[%dw 2.0
-output application/json skipNullOn="everywhere"
-var picklist = readUrl("classpath://picklist.json", "application/json")
----
-[{
-	"AnnualRevenue" : payload.properties.annualrevenue.value ,
-	"Azure_Revenue__c" : payload.properties.azure_revenue.value ,
-	"AWS_Revenue__c" : payload.properties.cmp_aws_revenue.value ,
-	("AWS_Services__c": picklist.company.AWS_Services__c[(payload.properties.cmp_aws_services.value)])if(payload.properties.cmp_aws_services.value != null),
-	("G_Suite__c": picklist.company.G_Suite__c[(payload.properties.cmp_g_suite.value)])if(payload.properties.cmp_g_suite.value != null),
-	"GCP_Revenue__c" : payload.properties.cmp_gcp_revenue.value ,
-	("Google_Cloud__c": picklist.company.Google_Cloud__c[(payload.properties.cmp_google_cloud.value)])if(payload.properties.cmp_google_cloud.value != null),
-	"CMP_Link_Company__c" : payload.properties.cmp_link___company.value ,
-	("Microsoft_Azure__c": picklist.company.Microsoft_Azure__c[(payload.properties.cmp_microsoft_azure.value)])if(payload.properties.cmp_microsoft_azure.value != null),
-	("Office_365__c": picklist.company.Office_365__c[(payload.properties.cmp_office_365.value)])if(payload.properties.cmp_office_365.value != null),
-	("Consolidation_Date__c" : payload.properties.consolidation_date.value as Number as DateTime {unit : "milliseconds"}) if(payload.properties.consolidation_date.value != null) ,
-	"Hubspot_Country__c" : payload.properties.country.value ,
-	"DoiT_Parent_Sales_Region__c" : payload.properties.doit_parent_sales_region__c.value ,
-	"Company_Domain__c" : payload.properties.domain.value ,
-	("Flexsave_GCP_Marketplace__c": picklist.company.Flexsave_GCP_Marketplace__c[(payload.properties.flexsave_gcp_marketplace.value)])if(payload.properties.flexsave_gcp_marketplace.value != null),
-	"OwnerId" : vars.ownerId ,
-	"Hubspot_State_Region__c" : payload.properties.hubspot_state_region__c.value ,
-	"Industry_Text__c" : payload.properties.industry.value ,
-	"Lifecycle_Stage__c" : payload.properties.lifecycle_stage__c.value ,
-	("Marketing_Rights__c": picklist.company.Marketing_Rights__c[(payload.properties.marketing_right.value)])if(payload.properties.marketing_right.value != null),
-	"Name" : payload.properties.name.value ,
-	"NumberOfEmployees" : payload.properties.numberofemployees.value ,
-	"O365_Revenue__c" : payload.properties.o365_revenue.value ,
-	"Phone" : payload.properties.phone.value ,
-	"Id" : payload.properties.sfdc_account_id.value ,
-	("Became_a_Former_Customer__c" : payload.properties.sfdc_became_a_former_customer.value as Number as DateTime {unit : "milliseconds"}) if(payload.properties.sfdc_became_a_former_customer.value != null) ,
-	"Segment__c" : payload.properties.sfdc_segment.value ,
-	"Sub_Region__c" : payload.properties.sfdc_sub_region.value ,
-	"Sub_Industry__c" : payload.properties.sub_industry__c.value ,
-	"Type" : payload.properties.'type'.value ,
-	"Website" : payload.properties.website.value ,
-	"Hubspot_Company_ID__c" : payload.companyId as String
-}]
-	 ]]></ee:set-payload>
+				<ee:set-payload resource="dwl/company/update/msg-mapping.dwl" />
 			</ee:message>
 			<ee:variables />
 		</ee:transform>
@@ -176,12 +110,7 @@ var picklist = readUrl("classpath://picklist.json", "application/json")
 			<when expression="#[payload.successful]" >
 				<ee:transform doc:name="Successful Response" doc:id="724dced3-ec7c-4766-af93-c4829b7946d3" >
 					<ee:message >
-						<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
----
-{
-	"sfdc_account_id" : payload.items.id[0]
-}]]></ee:set-payload>
+						<ee:set-payload resource="dwl/company/update/msg-successful-response.dwl" />
 					</ee:message>
 					<ee:variables />
 				</ee:transform>
@@ -191,12 +120,7 @@ output application/json
 			<otherwise >
 				<ee:transform doc:name="Failed Response" doc:id="977026ab-ee2c-48aa-bf81-476e90a03811" >
 					<ee:message >
-						<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
---- 
-{
-	"errorMessage":payload.items.message[0]
-}]]></ee:set-payload>
+						<ee:set-payload resource="dwl/company/update/msg-failed-message.dwl" />
 					</ee:message>
 				</ee:transform>
 				<logger level="ERROR" doc:name="Log error message" doc:id="9b7e9d89-1c99-4c49-8334-87aad465db13" message="#[payload]"/>

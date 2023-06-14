@@ -35,8 +35,8 @@ output application/json
 payload default [] ++ ((vars.recentmodifiedContacts.contacts filter ((item, index) -> item.addedAt as Number > vars.minTimeCampaign as Number)).vid default [])]]></ee:set-payload>
 			</ee:message>
 			<ee:variables >
-				<ee:set-variable resource="dwl/conatct/var-time-offset.dwl" variableName="timeOffset" />
-				<ee:set-variable resource="dwl/conatct/var-recentmodifiedTime.dwl" variableName="recentmodifiedTime" />
+				<ee:set-variable resource="dwl/contact/var-time-offset.dwl" variableName="timeOffset" />
+				<ee:set-variable resource="dwl/contact/var-recentmodifiedTime.dwl" variableName="recentmodifiedTime" />
 				<ee:set-variable variableName="recentmodifiedIds" ><![CDATA[%dw 2.0
 output application/json
 ---
@@ -170,7 +170,7 @@ output application/json skipNullOn="everywhere"
 			<when expression="#[payload.successful]" >
 				<ee:transform doc:name="Successful Response" doc:id="ffb93594-fb78-4fe6-97f5-fab4df2e41c6" >
 					<ee:message >
-						<ee:set-payload resource="dwl/conatct/msg-create-contact-sync-back.dwl" />
+						<ee:set-payload resource="dwl/contact/msg-create-contact-sync-back.dwl" />
 					</ee:message>
 					<ee:variables />
 				</ee:transform>
@@ -179,7 +179,7 @@ output application/json skipNullOn="everywhere"
 			<otherwise >
 				<ee:transform doc:name="Failed Response" doc:id="2a5332d9-d2f7-461b-aba7-a01d190ec979" >
 					<ee:message >
-						<ee:set-payload resource="dwl/conatct/msg-create-contact-error-message.dwl" />
+						<ee:set-payload resource="dwl/contact/msg-create-contact-error-message.dwl" />
 					</ee:message>
 				</ee:transform>
 				<logger level="ERROR" doc:name="Log error message" doc:id="a15b51f3-cff2-48f0-a531-f85a2aedc8ed" message="#[payload]" />
@@ -224,7 +224,7 @@ output application/json skipNullOn="everywhere"
 					<when expression="#[payload.successful]" >
 						<ee:transform doc:name="Successful Response" doc:id="25daa333-8ad9-4806-939a-1cb76e3a3b1c" >
 							<ee:message >
-								<ee:set-payload resource="dwl/conatct/msg-update-contact-sync-back.dwl" />
+								<ee:set-payload resource="dwl/contact/msg-update-contact-sync-back.dwl" />
 							</ee:message>
 							<ee:variables />
 						</ee:transform>
@@ -233,7 +233,7 @@ output application/json skipNullOn="everywhere"
 					<otherwise >
 						<ee:transform doc:name="Failed Response" doc:id="6874cabb-2171-4f67-8bdc-8c49404aeaa4" >
 							<ee:message >
-								<ee:set-payload resource="dwl/conatct/msg-update-contact-error-message.dwl" />
+								<ee:set-payload resource="dwl/contact/msg-update-contact-error-message.dwl" />
 							</ee:message>
 						</ee:transform>
 						<logger level="ERROR" doc:name="Log error message" doc:id="0e346d3c-5027-4918-bad4-f66290992874" message="#[payload]" />

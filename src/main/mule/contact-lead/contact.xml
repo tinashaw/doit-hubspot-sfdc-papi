@@ -18,7 +18,7 @@ http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/htt
 		</choice>
 		<ee:transform doc:name="Contact Mapping" doc:id="8c2e4bc0-3337-4143-9a7d-248c70b1e1bf">
 			<ee:message>
-				<ee:set-payload resource="dwl/conatct/msg-create-contact-mapping.dwl" />
+				<ee:set-payload resource="dwl/contact/msg-create-contact-mapping.dwl" />
 			
 </ee:message>
 			<ee:variables>
@@ -33,7 +33,7 @@ vars.accountId default ""]]></ee:set-variable>
 			<when expression="#[payload.successful]">
 				<ee:transform doc:name="Successful Response" doc:id="637f1758-1030-42dc-bca0-658ae11f506e">
 			<ee:message>
-						<ee:set-payload resource="dwl/conatct/msg-create-contact-sync-back.dwl" />
+						<ee:set-payload resource="dwl/contact/msg-create-contact-sync-back.dwl" />
 			
 </ee:message>
 			<ee:variables>
@@ -46,7 +46,7 @@ vars.accountId default ""]]></ee:set-variable>
 			<otherwise>
 				<ee:transform doc:name="Failed Response" doc:id="f665dd26-8354-4b55-a6cf-81f8448b5da9" >
 					<ee:message >
-						<ee:set-payload resource="dwl/conatct/msg-create-contact-error-message.dwl" />
+						<ee:set-payload resource="dwl/contact/msg-create-contact-error-message.dwl" />
 					
 </ee:message>
 				</ee:transform>
@@ -67,7 +67,7 @@ vars.accountId default ""]]></ee:set-variable>
 		</choice>
 		<ee:transform doc:name="Mappaing" doc:id="fbdcf5ef-80d1-40e8-87fc-000016eed8d3" >
 			<ee:message >
-				<ee:set-payload resource="dwl/conatct/msg-update-contact-mapping.dwl" />
+				<ee:set-payload resource="dwl/contact/msg-update-contact-mapping.dwl" />
 			
 </ee:message>
 		</ee:transform>
@@ -76,7 +76,7 @@ vars.accountId default ""]]></ee:set-variable>
 			<when expression="#[payload.successful]" >
 				<ee:transform doc:name="Successful Response" doc:id="aba9b228-9814-4855-8c8c-47408230277f" >
 					<ee:message >
-						<ee:set-payload resource="dwl/conatct/msg-update-contact-sync-back.dwl" />
+						<ee:set-payload resource="dwl/contact/msg-update-contact-sync-back.dwl" />
 					</ee:message>
 					<ee:variables />
 				</ee:transform>
@@ -86,7 +86,7 @@ vars.accountId default ""]]></ee:set-variable>
 			<otherwise >
 				<ee:transform doc:name="Failed Response" doc:id="90817a8b-864f-4aac-8b41-2e9808c5910d" >
 					<ee:message >
-						<ee:set-payload resource="dwl/conatct/msg-update-contact-error-message.dwl" />
+						<ee:set-payload resource="dwl/contact/msg-update-contact-error-message.dwl" />
 					</ee:message>
 				</ee:transform>
 				<logger level="ERROR" doc:name="Log error message" doc:id="8c5bacd3-6fe5-422b-aaed-7df14251a276" message="#[payload]" />
