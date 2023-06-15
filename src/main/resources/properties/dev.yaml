@@ -32,10 +32,10 @@ form:
   Status : "Completed" 
         
 salesforce-sapi:
-#  host: "doit-salesforce-sapi.us-e2.cloudhub.io"
-#  port: ""         #for https, Otherwise for http:8081
-  host: "localhost"
-  port: "8082"
+  host: "doit-salesforce-sapi.us-e2.cloudhub.io"
+  port: ""         #for https, Otherwise for http:8081
+#  host: "localhost"
+#  port: "8082"
   protocol: "HTTP"
   basepath: "/api"
   responseBufferSize: "1024"
