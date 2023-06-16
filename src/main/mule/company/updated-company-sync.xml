@@ -6,7 +6,7 @@
 http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
-	<flow name="updated-company-schedular-flow" doc:id="ed3ba485-2aa0-4f34-9fd0-0f4f9c1a73a5" >
+	<flow name="updated-company-schedular-flow" doc:id="ed3ba485-2aa0-4f34-9fd0-0f4f9c1a73a5" initialState="stopped">
 		<scheduler doc:name="Scheduler every minute" doc:id="fcb8b73d-84b6-4c9d-b04c-973189e941c2" >
 			<scheduling-strategy >
 				<fixed-frequency timeUnit="MINUTES"/>
