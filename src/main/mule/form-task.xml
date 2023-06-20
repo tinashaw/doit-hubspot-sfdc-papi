@@ -10,7 +10,7 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd">
 	<flow name="form-task-flow" doc:id="2226da81-0893-4f3d-9286-f3259d759608" >
 		<http:listener doc:name="Listener" doc:id="551338bb-3b1f-484b-b30a-9634e21bfa4a" config-ref="HTTP_Listener_config" path="/testform"/>
-		<http:request method="POST" doc:name="get aggregated contacts by vid" doc:id="a9853634-8bbd-4615-925a-61347baf15aa" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/contact/aggregated" responseTimeout="600000" targetValue="#[payload default []]" />
+		<http:request method="POST" doc:name="get aggregated contacts by vid" doc:id="a9853634-8bbd-4615-925a-61347baf15aa" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/contact/aggregated" responseTimeout="600000" targetValue="#[payload default []]" sendCorrelationId="ALWAYS"/>
 		<ee:transform doc:name="Filter formSubmittedContact" doc:id="b091e7ac-7006-4d5f-94cd-8d40ac642810">
 			<ee:message>
 			</ee:message>
@@ -21,9 +21,9 @@ output application/json
 payload filter ((item, index) -> sizeOf(item."form-submissions") > 0 )]]></ee:set-variable>
 			</ee:variables>
 		</ee:transform>
-		<choice doc:name="Choice" doc:id="c398626d-51e4-4556-a7b6-a0bb1e536e2c" >
+		<choice doc:name="Is form submitted ?" doc:id="c398626d-51e4-4556-a7b6-a0bb1e536e2c" >
 			<when expression="#[sizeOf(vars.formSubmittedContact) &gt; 0]">
-				<flow-ref doc:name="Flow Ref to form-taskSub_Flow" doc:id="7475cb15-70f8-4ea3-9aec-5564296712af" name="form-taskSub_Flow"/>
+				<flow-ref doc:name="Flow Ref to form-task-sub-flow" doc:id="7475cb15-70f8-4ea3-9aec-5564296712af" name="form-task-sub-flow"/>
 			</when>
 			<otherwise >
 				<logger level="INFO" doc:name="Info Log" doc:id="8335f0ac-e4eb-459c-b13b-cb4f4355c4be" message="No Form Submission Found"/>
@@ -31,41 +31,23 @@ payload filter ((item, index) -> sizeOf(item."form-submissions") > 0 )]]></ee:se
 		</choice>
 	
 </flow>
-	<sub-flow name="form-taskSub_Flow" doc:id="fc7b89fb-3461-4235-9ec8-0970fc0ebc5a" >
+	<sub-flow name="form-task-sub-flow" doc:id="fc7b89fb-3461-4235-9ec8-0970fc0ebc5a" >
 		<logger level="INFO" doc:name="Log Started" doc:id="1875894b-63eb-4802-a351-054b28e1833b" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  env : Mule::p('env'),&#10;  transactionId : correlationId,&#10;  applicationName : Mule::p('app.name'),&#10;  flowName : &quot;form-task-flow&quot;,&#10;  status: &quot;Started&quot;,&#10;  timestamp : now()&#10;}]" />
 		<ee:transform doc:name="Mapping" doc:id="99b6137b-6400-47f6-8d64-8153a25f6995">
 			<ee:message>
-				<ee:set-payload><![CDATA[%dw 2.0
-output application/json skipNullOn="everywhere"
----
-vars.formSubmittedContact map ((item, index) -> 
-{
-	
-	Subject : item."form-submissions".title[0] ,
-	Type : p('form.Type'),
-	ActivityDate : (item."form-submissions".timestamp[0] as Number as DateTime {unit : "milliseconds"}) as Date ,
-	RecordTypeId : p('form.RecordTypeId') ,      //"01276000000CrWY",
-	OwnerId : p('form.AssignedTo'),
-	Status : p('form.Status'),
-	WhatId : if( item.properties.sfdc_contact_id.value != null) item.properties.sfdc_account_id.value else null ,
-	WhoId : if( item.properties.sfdc_contact_id.value != null) item.properties.sfdc_contact_id.value else item.properties.sfdc_lead_id.value
-	
-	})]]></ee:set-payload>
+				<ee:set-payload resource="dwl/form/msg-mapping.dwl" />
 			</ee:message>
 		</ee:transform>
 		
 		<parallel-foreach doc:name="Parallel For Each" doc:id="ed8c305c-0fe8-42c3-b1e3-5d04130081cd" >
-					<ee:transform doc:name="Transform Message" doc:id="f0480e62-55a7-40a8-b80f-ed928796a5a6" >
+					<ee:transform doc:name="Set Payload as Array" doc:id="f0480e62-55a7-40a8-b80f-ed928796a5a6" >
 						<ee:message >
-							<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
----
-[payload]]]></ee:set-payload>
+					<ee:set-payload resource="dwl/form/msg-payload-in array.dwl" />
 						</ee:message>
 					</ee:transform>
-					<choice doc:name="Choice" doc:id="8dce801c-505d-40b4-8a8b-6e2d33c2c47e" >
+					<choice doc:name="Is WhoId null ?" doc:id="8dce801c-505d-40b4-8a8b-6e2d33c2c47e" >
 						<when expression="#[payload.WhoId != null]">
-							<http:request method="GET" doc:name="Lookup for same Existing Task" doc:id="31dd808a-62bd-458c-a43b-2ab9eae48601" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/genericquery" target="sfTask">
+							<http:request method="GET" doc:name="Lookup for same Existing Task" doc:id="31dd808a-62bd-458c-a43b-2ab9eae48601" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/genericquery" target="sfTask" sendCorrelationId="ALWAYS">
 						<http:query-params><![CDATA[#[output application/java
 ---
 {
@@ -73,19 +55,11 @@ output application/json
 	
 	}]]]></http:query-params>
 					</http:request>
-							<choice doc:name="Choice" doc:id="2ded92ed-3872-45f9-b690-884d930188e3">
+							<choice doc:name="Is same task Exist ?" doc:id="2ded92ed-3872-45f9-b690-884d930188e3">
 						<when expression="#[sizeOf(vars.sfTask) &lt; 1]">
 							<http:request method="POST" doc:name="Request to create task" doc:id="dbf054bb-fa89-41d7-8aaa-3c10707a0745" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/task/create" sendCorrelationId="ALWAYS" responseTimeout="-1" />
-							<choice doc:name="Choice" doc:id="e56fa372-653d-43b0-9bf1-41238c56d81c" >
+							<choice doc:name="Is Success ?" doc:id="e56fa372-653d-43b0-9bf1-41238c56d81c" >
 								<when expression="#[payload.successful == true]">
-<!-- [STUDIO:"Set Created Task Ids"]									<ee:transform doc:name="Set Created Task Ids" doc:id="74c5ac10-d77d-4e53-914d-b25628711a20">
-			<ee:message>
-				<ee:set-payload><![CDATA[%dw 2.0
-output application/json
-&#45;&#45;-
-"Created Task Id" : payload.items.payload.id]]></ee:set-payload>
-			</ee:message>
-		</ee:transform> [STUDIO] -->
 									<logger level="INFO" doc:name="Info Log" doc:id="0777b142-9c77-4dc6-939f-bf2696540931" message='#[%dw 2.0&#10;output application/json&#10;---&#10;"Created Task Id" : payload.items.payload.id]' />
 								</when>
 								<otherwise >
