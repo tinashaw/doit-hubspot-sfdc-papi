@@ -45,7 +45,7 @@ output application/json
 		</ee:transform>
 		<choice doc:name="Choice" doc:id="52e931de-1a3c-4ff7-ae06-903529e5eaf9" >
 			<when expression="#[sizeOf(vars.recentmodifiedIds) != p('url.recentmodifiedcount') as Number]" >
-				<flow-ref doc:name="Flow Ref to campaign-syncFlow" doc:id="e4bab8f5-c8a9-4c7c-8658-e2f905b0681d" name="campaign-syncFlow" />
+				<flow-ref doc:name="Flow Ref to campaign-syncFlow" doc:id="e4bab8f5-c8a9-4c7c-8658-e2f905b0681d" name="campaign-sync-flow" />
 				<os:store doc:name="Store minTimeCampaign" doc:id="22e60606-9650-49d2-a0c6-fcc6fa11fbd8" key="minTimeCampaign" objectStore="Object_store" >
 					<os:value ><![CDATA[#[vars.recentmodifiedTime]]]></os:value>
 				</os:store>
@@ -55,7 +55,7 @@ output application/json
 			</otherwise>
 		</choice>
 	</sub-flow>
-	<flow name="campaign-syncFlow" doc:id="38d273f9-d95e-4c49-9341-9c3d30ca0e81">
+	<flow name="campaign-sync-flow" doc:id="38d273f9-d95e-4c49-9341-9c3d30ca0e81">
 		<ee:transform doc:name="Inbound Payload" doc:id="97ccacd6-0f8c-4964-a42b-90b3f4109a8c">
 			<ee:message>
 				<ee:set-payload><![CDATA[%dw 2.0

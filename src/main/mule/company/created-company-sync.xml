@@ -71,7 +71,7 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 			<http:query-params ><![CDATA[#[output application/java
 ---
 {
-	companyId : vars.companyDetails.companyId
+	companyId : vars.companyId
 }]]]></http:query-params>
 		</http:request>
 	</sub-flow>

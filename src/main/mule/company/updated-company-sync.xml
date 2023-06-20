@@ -6,16 +6,16 @@
 http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
-	<flow name="updated-company-schedular-flow" doc:id="ed3ba485-2aa0-4f34-9fd0-0f4f9c1a73a5" initialState="stopped">
+	<flow name="updated-company-schedular-flow" doc:id="ed3ba485-2aa0-4f34-9fd0-0f4f9c1a73a5">
 		<scheduler doc:name="Scheduler every minute" doc:id="fcb8b73d-84b6-4c9d-b04c-973189e941c2" >
 			<scheduling-strategy >
 				<fixed-frequency timeUnit="MINUTES"/>
 			</scheduling-strategy>
 		</scheduler>
-<!-- [STUDIO:"Clear"]		<os:clear doc:name="Clear" doc:id="c4f60af1-c215-4493-9919-f81fc6f2273c" objectStore="Object_store"/> [STUDIO] -->
-		<logger level="INFO" doc:name="Log Started" doc:id="b35705c1-34f7-4263-bab6-ba6a0b0cf407" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  env : Mule::p('env'),&#10;  transactionId : correlationId,&#10;  applicationName : Mule::p('app.name'),&#10;  flowName : &quot;Hubspot company to Salesforce Account Creation flow&quot;,&#10;  status: &quot;Started&quot;,&#10;  timestamp : now()&#10;}]" />
+		<os:clear doc:name="Clear" doc:id="c4f60af1-c215-4493-9919-f81fc6f2273c" objectStore="Object_store"/>
+		<logger level="INFO" doc:name="Log Started" doc:id="b35705c1-34f7-4263-bab6-ba6a0b0cf407" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  env : Mule::p('env'),&#10;  transactionId : correlationId,&#10;  applicationName : Mule::p('app.name'),&#10;  flowName : &quot;Hubspot company to Salesforce Account Updation flow&quot;,&#10;  status: &quot;Started&quot;,&#10;  timestamp : now()&#10;}]" />
 		<os:retrieve doc:name="Retrieve minTimeCompany" doc:id="6b30ecee-8e9e-4bde-a989-72a46939ce0c" key="minTimeCompany" objectStore="Object_store" target="minTimeCompany" >
-			<os:default-value ><![CDATA[#["1685001414195"]]]></os:default-value>
+			<os:default-value ><![CDATA[#["1686814994705"]]]></os:default-value>
 		</os:retrieve>
 		<set-variable value='#[""]' doc:name="Set Variable offset" doc:id="f5e2c8f7-fcb9-4142-83f5-3740594d10a1" variableName="offset" />
 		<flow-ref doc:name="Flow Ref to aggregate-company-ids-subflow" doc:id="a344d2de-1242-4ab5-ad5e-ef68b9f6a358" name="aggregate-company-ids-subflow" />
@@ -45,7 +45,7 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 				<os:store doc:name="Store minTimeCompany" doc:id="29389e49-e423-492b-b647-0633663f82b4" key="minTimeCompany" objectStore="Object_store" >
 					<os:value ><![CDATA[#[vars.recentmodifiedTime]]]></os:value>
 				</os:store>
-				<logger level="INFO" doc:name="Log Completed" doc:id="a46146c8-7ade-458d-ad9c-2b4dfb598b2f" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  env : Mule::p('env'),&#10;  transactionId : correlationId,&#10;  applicationName : Mule::p('app.name'),&#10;  flowName : &quot;Hubspot company to Salesforce Account Creation flow&quot;,&#10;  status: &quot;Completed&quot;,&#10;  timestamp : now()&#10;}]" />
+				<logger level="INFO" doc:name="Log Completed" doc:id="a46146c8-7ade-458d-ad9c-2b4dfb598b2f" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  env : Mule::p('env'),&#10;  transactionId : correlationId,&#10;  applicationName : Mule::p('app.name'),&#10;  flowName : &quot;Hubspot company to Salesforce Account Updation flow&quot;,&#10;  status: &quot;Completed&quot;,&#10;  timestamp : now()&#10;}]" />
 			</when>
 			<otherwise >
 				<flow-ref doc:name="Flow Ref to contact-leadSub_Flow" doc:id="78913d73-081b-4735-b12b-fa64556f737f" name="aggregate-company-ids-subflow" />

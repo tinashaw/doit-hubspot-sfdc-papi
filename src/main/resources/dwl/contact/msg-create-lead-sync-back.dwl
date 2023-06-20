@@ -3,5 +3,6 @@ output application/json
 ---
 {
 	"sfdc_lead_id" : payload.items.id[0],
-	"sfdc_account_id" : vars.accountId
+	"sfdc_account_id" : vars.accountId,
+	"ms_last_run" : (now()) as DateTime as Number {unit:"milliseconds"} as String
 }
