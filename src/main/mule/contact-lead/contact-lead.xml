@@ -12,6 +12,7 @@ http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/cu
 				<fixed-frequency timeUnit="MINUTES" frequency="${scheduler.frequency}"/>
 			</scheduling-strategy>
 		</scheduler>
+		<logger level="INFO" doc:name="Log Started" doc:id="b4a69aad-d3ec-4e85-8935-a583a37c520a" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  env : Mule::p('env'),&#10;  transactionId : correlationId,&#10;  applicationName : Mule::p('app.name'),&#10;  flowName : &quot;Hubspot contact to Salesforce contact/lead flow&quot;,&#10;  status: &quot;Started&quot;,&#10;  timestamp : now()&#10;}]" />
 		<os:retrieve doc:name="Retrieve minTime" doc:id="43df15fa-0338-451c-becc-47c4aea33f05" key="minTime" objectStore="Object_store" target="minTime">
 			<os:default-value><![CDATA[#[p('min-time.contact')]]]></os:default-value>
 		</os:retrieve>
@@ -41,16 +42,29 @@ http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/cu
 			<when expression="#[sizeOf(vars.recentmodifiedIds) != p('url.recentmodifiedcount') as Number]">
 				<flow-ref doc:name="Flow Ref to contact-lead-flow" doc:id="4e6c2c75-b5fe-4909-974a-dfd58796922a" name="contact-lead-flow" target="contactLeadFlowResponse"/>
 				
-				<scatter-gather doc:name="Scatter-Gather" doc:id="59275f9a-3e44-44a3-ac51-d39213ba8433" >
+				<logger level="INFO" doc:name="Log Completed" doc:id="46b8bddd-15ff-4ec6-aad8-702e837bc1d7" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  env : Mule::p('env'),&#10;  transactionId : correlationId,&#10;  applicationName : Mule::p('app.name'),&#10;  flowName : &quot;Hubspot contact to Salesforce contact/lead flow&quot;,&#10;  status: &quot;Completed&quot;,&#10;  timestamp : now()&#10;}]" />
+				<scatter-gather doc:name="Scatter-Gather - vids" doc:id="59275f9a-3e44-44a3-ac51-d39213ba8433" >
 					<route>
-						<try doc:name="Try" doc:id="c8262ad1-a0c0-4bd5-a69a-c6d0cdc8b92e" >
+						<try doc:name="Try task flow" doc:id="c8262ad1-a0c0-4bd5-a69a-c6d0cdc8b92e" >
 							<flow-ref doc:name="Flow Ref to form-task-flow" doc:id="37e0a6c5-5dc5-4831-9db6-2a075dd9c537" name="form-task-flow" />
-						</try>
+							<error-handler >
+								<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="520e0876-205d-442c-8027-7a0e9eb50f57" >
+									<logger level="ERROR" doc:name="Error occurred" doc:id="0c6a17c7-65e6-4204-bff3-69ae0dc74679" message='#["Error occurred in form-task-flow"]'/>
+								</on-error-propagate>
+							</error-handler>
+						
+</try>
 					</route>
 					<route>
-						<try doc:name="Try" doc:id="e7c4a1d0-2ef6-4d1c-99af-373bbf904de6" >
+						<try doc:name="Try campaign flow" doc:id="e7c4a1d0-2ef6-4d1c-99af-373bbf904de6" >
 							<flow-ref doc:name="Flow Ref to campaign-sync-flow" doc:id="2c5dabb8-d115-437b-9470-ed503ce8ce58" name="campaign-sync-flow" />
-						</try>
+							<error-handler >
+								<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="da90ecd2-108c-41f4-9474-92506cec5fc9" >
+									<logger level="ERROR" doc:name="Error occurred" doc:id="b5150b59-fa8c-4cef-a27a-928102e9af8f" message='#["Error occurred in campaign flow"]'/>
+								</on-error-propagate>
+							</error-handler>
+						
+</try>
 					</route>
 				</scatter-gather>
 				<os:store doc:name="Store minTime" doc:id="ae422d57-4f61-466c-8512-c3c27397de0e" key="minTime" objectStore="Object_store">
@@ -192,6 +206,7 @@ http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/cu
 			<when expression="#[sizeOf(vars.accountId) == 0]" >
 				<logger level="INFO" doc:name="Create Account" doc:id="0fd190f7-b357-4d9e-9ab8-b90d5ab330e4" message='#["Create Account"]' />
 				<flow-ref doc:name="Flow Ref to Create Account in Salesforce " doc:id="0ea00a67-666b-4e84-be3a-0d12357760d4" name="create-account-contact-leadFlow" target="accountId"/>
+				<set-variable value="#[vars.accountId.sfdc_account_id]" doc:name="accountId" doc:id="2bdd14ec-17ff-4eca-b895-cf4f501042d9" variableName="accountId" />
 			</when>
 			<when expression="#[sizeOf(vars.accountId) == 1]" >
 				<set-variable value="#[vars.accountId.Id[0]]" doc:name="accountId" doc:id="2b5634fd-2e9b-4d3b-ba45-5b26c07da37c" variableName="accountId" />

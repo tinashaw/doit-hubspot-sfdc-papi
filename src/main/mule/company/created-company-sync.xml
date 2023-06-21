@@ -48,7 +48,7 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 					<ee:variables />
 				</ee:transform>
 				<logger level="INFO" doc:name="Log Account Created" doc:id="c2d22d8c-ed37-45b4-9722-19e97cb6887f" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  "Hubspot_Company_ID__c": vars.companyId,&#10;  "Account Id": payload.sfdc_account_id,&#10;  "Message": "Company Created in Salesforce"&#10;}]' />
-				<flow-ref doc:name="Flow Ref to salesforce-Ids-sync-backFlow" doc:id="cac9846c-418f-4250-9c6b-4540e768aa8a" name="company-to-account-sync-back" />
+				<flow-ref doc:name="Flow Ref to salesforce-Ids-sync-backFlow" doc:id="cac9846c-418f-4250-9c6b-4540e768aa8a" name="company-to-account-sync-back" target="syncBackResponse"/>
 			</when>
 			<otherwise>
 				<ee:transform doc:name="Failed Response" doc:id="625dfe31-777c-404e-a783-e6296d8d1b71">

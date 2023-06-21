@@ -7,6 +7,7 @@ http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/cu
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
 	<flow name="campaign-sync-flow" doc:id="38d273f9-d95e-4c49-9341-9c3d30ca0e81">
+		<logger level="INFO" doc:name="Log Started" doc:id="563dbcc3-ae05-4ef4-a558-e61455576990" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  env : Mule::p('env'),&#10;  transactionId : correlationId,&#10;  applicationName : Mule::p('app.name'),&#10;  flowName : &quot;Campaign Sync flow&quot;,&#10;  status: &quot;Started&quot;,&#10;  timestamp : now()&#10;}]" />
 		<ee:transform doc:name="Inbound Payload" doc:id="97ccacd6-0f8c-4964-a42b-90b3f4109a8c">
 			<ee:message>
 				<ee:set-payload><![CDATA[%dw 2.0
@@ -51,6 +52,7 @@ output application/json
 				</otherwise>
 			</choice>
 		</parallel-foreach>
+		<logger level="INFO" doc:name="Log Completed" doc:id="c7319791-2c73-4839-ac0f-f84e665d199d" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  env : Mule::p('env'),&#10;  transactionId : correlationId,&#10;  applicationName : Mule::p('app.name'),&#10;  flowName : &quot;Campaign Sync flow&quot;,&#10;  status: &quot;Completed&quot;,&#10;  timestamp : now()&#10;}]" />
 	</flow>
 	<sub-flow name="campaign-sync-checks" doc:id="ab827f3d-747f-4931-a9db-67a0ff88b47a" >
 		<ee:transform doc:name="Set querytobeexecuted" doc:id="cea8be51-f5cc-43a1-996d-94a865e30d40" >
