@@ -9,18 +9,17 @@ http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/cu
 	<flow name="contact-schedular-flow" doc:id="b92f4993-be0a-4751-83cb-08b56fa7a202">
 		<scheduler doc:name="Scheduler every minute" doc:id="1dcde066-d2e2-49f8-b99b-3e9b317f65ce" >
 			<scheduling-strategy >
-				<fixed-frequency timeUnit="MINUTES" frequency="30"/>
+				<fixed-frequency timeUnit="MINUTES" frequency="${scheduler.frequency}"/>
 			</scheduling-strategy>
 		</scheduler>
-<!-- [STUDIO:"Clear objectstore"]		<os:clear doc:name="Clear objectstore" doc:id="3c81391b-1d2f-4250-b5bc-3087964071fb" objectStore="Object_store"/> [STUDIO] -->
 		<os:retrieve doc:name="Retrieve minTime" doc:id="43df15fa-0338-451c-becc-47c4aea33f05" key="minTime" objectStore="Object_store" target="minTime">
-			<os:default-value><![CDATA[#["1686261872865"]]]></os:default-value>
+			<os:default-value><![CDATA[#[p('min-time.contact')]]]></os:default-value>
 		</os:retrieve>
 		<set-variable value='#[""]' doc:name="Set Variable timeOffset" doc:id="a99edfb1-e079-4e4f-9169-fb2f64761059" variableName="timeOffset"/>
 		<flow-ref doc:name="Flow Ref to contact-leadSub_Flow" doc:id="15b1e537-e3ec-4b9d-9c9f-faedaa3ce75f" name="contact-lead-subflow"/>
 	</flow>
 	<sub-flow name="contact-lead-subflow" doc:id="4cd33c71-aa24-4204-8ce7-864ce278a82b" >
-		<http:request method="GET" doc:name="Request to fetch all recentmodified contacts" doc:id="18d2b8d6-6b8c-49fb-a100-3a0a6c08944c" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/contact/recentmodified" target="recentmodifiedContacts" responseTimeout="#[p('hubspot-sapi.responseTimeout')]">
+		<http:request method="GET" doc:name="Request to fetch all recentmodified contacts" doc:id="18d2b8d6-6b8c-49fb-a100-3a0a6c08944c" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/contact/recentmodified" target="recentmodifiedContacts" responseTimeout="#[p('hubspot-sapi.responseTimeout')]" sendCorrelationId="ALWAYS">
 			<http:query-params ><![CDATA[#[output application/java
 ---
 {
@@ -41,15 +40,6 @@ http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/cu
 		<choice doc:name="Count(recentmodifiedIds) = count" doc:id="1f4d2d7e-0043-42ec-8630-a13b05260fcc" >
 			<when expression="#[sizeOf(vars.recentmodifiedIds) != p('url.recentmodifiedcount') as Number]">
 				<flow-ref doc:name="Flow Ref to contact-lead-flow" doc:id="4e6c2c75-b5fe-4909-974a-dfd58796922a" name="contact-lead-flow" target="contactLeadFlowResponse"/>
-				
-<!-- [STUDIO:"Choice"]				<choice doc:name="Choice" doc:id="15eaa9e0-56f1-432c-bdf5-838866bfea8d">
-					<when expression="#[sizeOf(payload) &gt; 0]">
-						<flow-ref doc:name="Flow Ref to form-task-flow" doc:id="5f546cf9-e21a-4ea2-8a96-1d96c8a365de" name="form-task-flow" />
-					</when>
-					<otherwise >
-						<logger level="DEBUG" doc:name="Logger" doc:id="f8c20492-6ebe-4138-b001-8ca3479b4a14" message="No Updates"/>
-					</otherwise>
-				</choice> [STUDIO] -->
 				
 				<scatter-gather doc:name="Scatter-Gather" doc:id="59275f9a-3e44-44a3-ac51-d39213ba8433" >
 					<route>
@@ -78,7 +68,7 @@ http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/cu
 				<ee:set-payload resource="dwl/contact/msg-contact-lead-inbound-payload.dwl" />
 			</ee:message>
 		</ee:transform>
-		<http:request method="POST" doc:name="get aggregated contacts by vid" doc:id="bfa0fe04-abd6-4c93-abb1-97134a3239be" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/contact/aggregated" responseTimeout="600000" targetValue="#[payload default []]"/>
+		<http:request method="POST" doc:name="get aggregated contacts by vid" doc:id="bfa0fe04-abd6-4c93-abb1-97134a3239be" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/contact/aggregated" responseTimeout="600000" targetValue="#[payload default []]" sendCorrelationId="ALWAYS"/>
 		<ee:transform doc:name="Set Response Payload" doc:id="ba432a63-5554-4807-bedf-f857b3f91576" >
 			<ee:message >
 				<ee:set-payload resource="dwl/contact/msg-aggregated-contact-response.dwl" />
@@ -109,6 +99,7 @@ http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/cu
 				<ee:set-payload resource="dwl/contact/msg-final-response.dwl" />
 			</ee:message>
 		</ee:transform>
+		<logger level="DEBUG" doc:name="Log Final Response" doc:id="fcc3506a-b460-4d72-9273-7a05adf797dd" message="#[payload]"/>
 	</flow>
 	<flow name="contact-lead-sync-validations" doc:id="8612e3af-4c08-431b-af89-48834e5fce94" >
 		<ee:transform doc:name="Set Ids" doc:id="c8b4231c-43f1-4f12-83da-657029239fe7" >
@@ -121,7 +112,7 @@ http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/cu
 		</ee:transform>
 		<choice doc:name="Is associatedcompanyid = null ?" doc:id="ca57c5c1-9fdc-4087-9de9-adf834ceeb8e" >
 			<when expression="#[!isEmpty(vars.id.associatedcompanyid)]" >
-				<http:request method="GET" doc:name="Request HS to get Company Details" doc:id="7d063b55-4d1a-4e78-98c6-65e53ae98783" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/company/{companyid}" target="companyDetails">
+				<http:request method="GET" doc:name="Request HS to get Company Details" doc:id="7d063b55-4d1a-4e78-98c6-65e53ae98783" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/company/{companyid}" target="companyDetails" sendCorrelationId="ALWAYS">
 					<http:uri-params><![CDATA[#[output application/java
 ---
 {
@@ -157,7 +148,7 @@ http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/cu
 				<ee:set-variable resource="dwl/contact/var-querytobeexecuted-validate-contact-in-sf.dwl" variableName="querytobeexecuted" />
 			</ee:variables>
 		</ee:transform>
-		<http:request method="GET" doc:name="Get SF contact" doc:id="17681e5d-1e90-481f-93b8-007b9fe8c066" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/genericquery" target="contactId" responseTimeout="#[p('salesforce-sapi.responseTimeout')]">
+		<http:request method="GET" doc:name="Get SF contact" doc:id="17681e5d-1e90-481f-93b8-007b9fe8c066" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/genericquery" target="contactId" responseTimeout="#[p('salesforce-sapi.responseTimeout')]" sendCorrelationId="ALWAYS">
 			<http:query-params ><![CDATA[#[output application/java
 ---
 {
@@ -190,7 +181,7 @@ http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/cu
 				<ee:set-variable resource="dwl/contact/var-querytobeexecuted-capture-sf-accountid.dwl" variableName="querytobeexecuted" />
 			</ee:variables>
 		</ee:transform>
-		<http:request method="GET" doc:name="Get SF associated Accounts" doc:id="85d87687-9234-4906-a60b-a5d84d029596" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/genericquery" target="accountId" responseTimeout="#[p('salesforce-sapi.responseTimeout')]">
+		<http:request method="GET" doc:name="Get SF associated Accounts" doc:id="85d87687-9234-4906-a60b-a5d84d029596" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/genericquery" target="accountId" responseTimeout="#[p('salesforce-sapi.responseTimeout')]" sendCorrelationId="ALWAYS">
 			<http:query-params ><![CDATA[#[output application/java
 ---
 {
@@ -225,7 +216,7 @@ http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/cu
 						<ee:set-variable resource="dwl/contact/var-querytobeexecuted-freemail.dwl" variableName="querytobeexecuted" />
 					</ee:variables>
 				</ee:transform>
-				<http:request method="GET" doc:name="Get Partner Account Id" doc:id="63febd8b-a44c-412e-af28-f0ffdaa93a55" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/genericquery" responseTimeout="#[p('salesforce-sapi.responseTimeout')]" target="accountId" targetValue="#[payload.Id[0]]">
+				<http:request method="GET" doc:name="Get Partner Account Id" doc:id="63febd8b-a44c-412e-af28-f0ffdaa93a55" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/genericquery" responseTimeout="#[p('salesforce-sapi.responseTimeout')]" target="accountId" targetValue="#[payload.Id[0]]" sendCorrelationId="ALWAYS">
 					<http:query-params><![CDATA[#[output application/java
 ---
 {
@@ -287,12 +278,12 @@ http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/cu
 				<ee:set-payload resource="dwl/contact/msg-hs-expected-payload.dwl" />
 			</ee:message>
 		</ee:transform>
-		<http:request method="POST" doc:name="Request" doc:id="f9a1d5f8-91b8-4422-929d-4ceb3babcc16" url='#["https://api.hubapi.com/contacts/v1/contact/vid/" ++ (vars.id.vid default vars.vid) as String ++ "/profile"]' target="hubspotResponse" >
-			<http:headers ><![CDATA[#[output application/java
+		<http:request method="POST" doc:name="Request HS to update contact" doc:id="f9a1d5f8-91b8-4422-929d-4ceb3babcc16" target="hubspotResponse" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/contact/update" sendCorrelationId="ALWAYS">
+			<http:query-params ><![CDATA[#[output application/java
 ---
 {
-	"Authorization" : "Bearer pat-na1-9b2d3e73-5a06-41a7-acf9-28afb4e45d8d"
-}]]]></http:headers>
+	"vid" : (vars.id.vid default vars.vid) as String
+}]]]></http:query-params>
 		</http:request>
 		<ee:transform doc:name="Set Response Payload" doc:id="42564f1b-28fc-417e-a12a-52f132769fe2" >
 			<ee:message >
@@ -308,7 +299,7 @@ http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/cu
 				<ee:set-variable resource="dwl/contact/var-querytobeexecuted-choose-a-contact-from-more-than-one.dwl" variableName="querytobeexecuted" />
 			</ee:variables>
 		</ee:transform>
-		<http:request method="GET" doc:name="Get SF contact details" doc:id="42ea41b5-8058-4c47-a656-4456c0125e3f" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/genericquery" responseTimeout="#[p('salesforce-sapi.responseTimeout')]" target="contactId">
+		<http:request method="GET" doc:name="Get SF contact details" doc:id="42ea41b5-8058-4c47-a656-4456c0125e3f" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/genericquery" responseTimeout="#[p('salesforce-sapi.responseTimeout')]" target="contactId" sendCorrelationId="ALWAYS">
 			<http:query-params><![CDATA[#[output application/java
 ---
 {
@@ -331,7 +322,7 @@ http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/cu
 				<ee:set-variable resource="dwl/contact/var-querytobeexecuted-choose-a-account-from-more-than-one.dwl" variableName="querytobeexecuted" />
 			</ee:variables>
 		</ee:transform>
-		<http:request method="GET" doc:name="Get SF associated Account details" doc:id="7016b40c-ceb4-4b0e-afb4-6b391dd278b9" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/genericquery" responseTimeout="#[p('salesforce-sapi.responseTimeout')]" target="accountId" >
+		<http:request method="GET" doc:name="Get SF associated Account details" doc:id="7016b40c-ceb4-4b0e-afb4-6b391dd278b9" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/genericquery" responseTimeout="#[p('salesforce-sapi.responseTimeout')]" target="accountId" sendCorrelationId="ALWAYS">
 			<http:query-params ><![CDATA[#[output application/java
 ---
 {

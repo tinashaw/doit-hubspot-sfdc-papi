@@ -9,13 +9,12 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 	<flow name="updated-company-schedular-flow" doc:id="ed3ba485-2aa0-4f34-9fd0-0f4f9c1a73a5">
 		<scheduler doc:name="Scheduler every minute" doc:id="fcb8b73d-84b6-4c9d-b04c-973189e941c2" >
 			<scheduling-strategy >
-				<fixed-frequency timeUnit="MINUTES"/>
+				<fixed-frequency timeUnit="MINUTES" frequency="${scheduler.frequency}"/>
 			</scheduling-strategy>
 		</scheduler>
-		<os:clear doc:name="Clear" doc:id="c4f60af1-c215-4493-9919-f81fc6f2273c" objectStore="Object_store"/>
 		<logger level="INFO" doc:name="Log Started" doc:id="b35705c1-34f7-4263-bab6-ba6a0b0cf407" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  env : Mule::p('env'),&#10;  transactionId : correlationId,&#10;  applicationName : Mule::p('app.name'),&#10;  flowName : &quot;Hubspot company to Salesforce Account Updation flow&quot;,&#10;  status: &quot;Started&quot;,&#10;  timestamp : now()&#10;}]" />
 		<os:retrieve doc:name="Retrieve minTimeCompany" doc:id="6b30ecee-8e9e-4bde-a989-72a46939ce0c" key="minTimeCompany" objectStore="Object_store" target="minTimeCompany" >
-			<os:default-value ><![CDATA[#["1686814994705"]]]></os:default-value>
+			<os:default-value ><![CDATA[#[p('min-time.company')]]]></os:default-value>
 		</os:retrieve>
 		<set-variable value='#[""]' doc:name="Set Variable offset" doc:id="f5e2c8f7-fcb9-4142-83f5-3740594d10a1" variableName="offset" />
 		<flow-ref doc:name="Flow Ref to aggregate-company-ids-subflow" doc:id="a344d2de-1242-4ab5-ad5e-ef68b9f6a358" name="aggregate-company-ids-subflow" />
@@ -68,10 +67,11 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 			<choice doc:name="Is sfdc_account_id == Null ?" doc:id="c0bf4696-2c4d-4981-a3d1-16861377c670" >
 				<when expression="#[!isEmpty(payload.properties.sfdc_account_id.value)]" >
 					<logger level="INFO" doc:name="Update HS Company in SF" doc:id="a9c7de1a-7015-45e9-aab1-a7c2d998f8e2" message="Update Hubspot Company in Salesforce" />
-					<flow-ref doc:name="Flow Reference" doc:id="c2ed6da0-4237-4268-9a07-a31c9680d43c" name="updated-company-in-salesforce"/>
+					<flow-ref doc:name="Flow Reference to updated-company-in-salesforce" doc:id="c2ed6da0-4237-4268-9a07-a31c9680d43c" name="updated-company-in-salesforce"/>
 				</when>
 				<otherwise >
-					<logger level="INFO" doc:name="Search SF Account by company-Domain" doc:id="a4a97a17-0931-4467-bde4-dd46e176fdc0" message="#[&quot;Account with companyId '&quot; ++ payload.companyId as String ++ &quot;' is not yet created in Salesforce.&quot;]"/>
+					<logger level="INFO" doc:name="Account is not yet created in SF" doc:id="a4a97a17-0931-4467-bde4-dd46e176fdc0" message="#[&quot;Account with companyId '&quot; ++ payload.companyId as String ++ &quot;' is not yet created in Salesforce.&quot;]"/>
+					<set-payload value="#[{&#10;	&quot;message&quot;: &quot;Account with companyId '&quot; ++ payload.companyId as String ++ &quot;' is not yet created in Salesforce.&quot;&#10;}]" doc:name="Set Response Payload" doc:id="38645da1-49a8-4a69-b3ba-885c53ad974b" />
 				</otherwise>
 			</choice>
 		</parallel-foreach>
@@ -80,6 +80,7 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 				<ee:set-payload resource="dwl/company/update/msg-final-response.dwl" />
 			</ee:message>
 		</ee:transform>
+		<logger level="DEBUG" doc:name="Log Final Response" doc:id="2a3b5698-8721-4086-91ab-d7c687e0958e" message="#[payload]" />
 	</sub-flow>
 	<sub-flow name="updated-company-in-salesforce" doc:id="8cabc702-eae3-4874-8a2b-4484dde7247a" >
 		<ee:transform doc:name="Set ownerId" doc:id="1cbd9901-a0aa-4ece-9387-2a3030c44b26" >
@@ -92,7 +93,7 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 		<choice doc:name="is ownerId = Null ?" doc:id="50c14784-8f6c-4514-9a48-343904bd9a64">
 			<when expression="#[!isEmpty(vars.ownerId)]">
 				<set-variable value="#[vars.ownerId]" doc:name="ownerId" doc:id="d80c211a-3b53-4cd0-ab51-dcc945a7fef6" variableName="ownerId" />
-				<flow-ref doc:name="Flow Ref to get-salesforce-ownerIdFlow" doc:id="23985af6-9dd9-47a2-a308-6bb883569211" name="get-salesforce-ownerIdFlow" target="ownerId" />
+				<flow-ref doc:name="Flow Ref to get-salesforce-ownerId-flow" doc:id="23985af6-9dd9-47a2-a308-6bb883569211" name="get-salesforce-ownerId-flow" target="ownerId" />
 			</when>
 			<otherwise>
 				<logger level="INFO" doc:name="ownerId is null" doc:id="77f92a54-c9aa-4b3e-9b0b-30122cf5e443" message='#["ownerId is null"]' />
@@ -115,7 +116,7 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 					<ee:variables />
 				</ee:transform>
 				<logger level="INFO" doc:name="Log Account Updated" doc:id="e61ff77e-e0c5-4aed-bd83-9a1f3d091782" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  "Hubspot_Company_ID__c": vars.companyId,&#10;  "Account Id": payload.sfdc_account_id,&#10;  "Message": "Company Updated in Salesforce"&#10;}]' />
-				<flow-ref doc:name="Flow Ref to salesforce-Ids-sync-backFlow" doc:id="4417b78e-7b42-4939-83bb-450722728d6a" name="company-to-account-sync-back" />
+				<flow-ref doc:name="Flow Ref to salesforce-Ids-sync-backFlow" doc:id="4417b78e-7b42-4939-83bb-450722728d6a" name="company-to-account-sync-back" target="syncBackResponse"/>
 			</when>
 			<otherwise >
 				<ee:transform doc:name="Failed Response" doc:id="977026ab-ee2c-48aa-bf81-476e90a03811" >

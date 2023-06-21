@@ -18,7 +18,7 @@ http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mu
 				<ee:set-variable variableName="formSubmittedContact" ><![CDATA[%dw 2.0
 output application/json
 ---
-payload filter ((item, index) -> sizeOf(item."form-submissions") > 0 )]]></ee:set-variable>
+payload filter ((item, index) -> sizeOf(item."form-submissions") > 0 ) default []]]></ee:set-variable>
 			</ee:variables>
 		</ee:transform>
 		<choice doc:name="Is form submitted ?" doc:id="c398626d-51e4-4556-a7b6-a0bb1e536e2c" >

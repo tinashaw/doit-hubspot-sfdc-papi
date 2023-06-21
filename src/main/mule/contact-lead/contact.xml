@@ -10,7 +10,7 @@ http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/htt
 		<choice doc:name="is ownerId = Null ?" doc:id="b95c6a69-99c9-4eec-bce2-1309af5e4605" >
 			<when expression="#[!isEmpty(vars.id.ownerId)]">
 				<set-variable value="#[vars.id.ownerId]" doc:name="ownerId" doc:id="34c59484-725f-450e-9638-83c5592b75b7" variableName="ownerId"/>
-				<flow-ref doc:name="Flow Ref to get salesforce ownerIdFlow" doc:id="6dc06cc0-e787-43e1-8fb1-a734b9f7abe0" name="get-salesforce-ownerIdFlow" target="hubspot_owner_id" />
+				<flow-ref doc:name="Flow Ref to get-salesforce-ownerId-flow" doc:id="6dc06cc0-e787-43e1-8fb1-a734b9f7abe0" name="get-salesforce-ownerId-flow" target="hubspot_owner_id" />
 			</when>
 			<otherwise >
 				<logger level="INFO" doc:name="ownerId is null" doc:id="b890d94c-2f6a-4e35-b714-563621fbabf3" message='#["ownerId is null"]'/>
@@ -28,7 +28,7 @@ output application/java
 vars.accountId default ""]]></ee:set-variable>
 			</ee:variables>
 		</ee:transform>
-		<http:request method="POST" doc:name="Create contact in salesforce" doc:id="f6fd8959-d3f9-437b-9a40-4212c89a76a8" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/contact/create" responseTimeout="#[p('salesforce-sapi.responseTimeout')]"/>
+		<http:request method="POST" doc:name="Create contact in salesforce" doc:id="f6fd8959-d3f9-437b-9a40-4212c89a76a8" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/contact/create" responseTimeout="#[p('salesforce-sapi.responseTimeout')]" sendCorrelationId="ALWAYS"/>
 <choice doc:name="If Successful ?" doc:id="72e7ecaa-c078-42b0-8ed7-5b4f2257e207" >
 			<when expression="#[payload.successful]">
 				<ee:transform doc:name="Successful Response" doc:id="637f1758-1030-42dc-bca0-658ae11f506e">
@@ -59,7 +59,7 @@ vars.accountId default ""]]></ee:set-variable>
 		<choice doc:name="is ownerId = Null ?" doc:id="8d93869b-6fab-4a62-a99a-5ff7ecd09343">
 			<when expression="#[!isEmpty(payload.properties.hubspot_owner_id.value)]">
 				<set-variable value="#[payload.properties.hubspot_owner_id.value]" doc:name="ownerId" doc:id="7eadcfcd-b65f-4fe5-ae40-404c9a319178" variableName="ownerId" />
-				<flow-ref doc:name="Flow Ref to get salesforce ownerIdFlow" doc:id="d554822e-54f8-4b85-80c1-a84ffd6a3ff4" name="get-salesforce-ownerIdFlow" target="hubspot_owner_id" />
+				<flow-ref doc:name="Flow Ref to get-salesforce-ownerId-flow" doc:id="d554822e-54f8-4b85-80c1-a84ffd6a3ff4" name="get-salesforce-ownerId-flow" target="hubspot_owner_id" />
 			</when>
 			<otherwise>
 				<logger level="INFO" doc:name="ownerId is null" doc:id="313136bd-8bf5-4bd1-937d-03a315fe9ed5" message='#["ownerId is null"]' />
@@ -71,7 +71,7 @@ vars.accountId default ""]]></ee:set-variable>
 			
 </ee:message>
 		</ee:transform>
-		<http:request method="POST" doc:name="Request SF to update company" doc:id="40eb3c84-a9da-4364-9990-63281c5f5a23" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/contact/update" responseTimeout="-1"/>
+		<http:request method="POST" doc:name="Request SF to update company" doc:id="40eb3c84-a9da-4364-9990-63281c5f5a23" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/contact/update" responseTimeout="-1" sendCorrelationId="ALWAYS"/>
 		<choice doc:name="If Successful ?" doc:id="b2957610-0718-4dc5-bcb1-019a5e086081" >
 			<when expression="#[payload.successful]" >
 				<ee:transform doc:name="Successful Response" doc:id="aba9b228-9814-4855-8c8c-47408230277f" >

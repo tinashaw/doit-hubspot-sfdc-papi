@@ -1,36 +1,62 @@
-mule:
-  env: "local"
+env: "prod"
+app:
+  name: "doit-hubspot-sfdc-papi"
+  
+api:
+  host: "0.0.0.0"
+  port: "8084"
+  timeout: "40000"  
 
-http:
-  host: "localhost"
-  port: "8082"
-      
-salesforce:
+url:
+  recentmodifiedcount: "20"
   
-  token_endpoint: ""
-  audience_url: "https://test.salesforce.com"
-  system:
-    URL: "https://doit-intl--stage.sandbox.my.salesforce.com"
-    username: "udit.khare+sandbox1@apisero.com"
-    authorization_url: "https://test.salesforce.com/services/Soap/u/55.0"
-    
-    
+parallelForEach:
+  contact-lead:
+    maxConcurrency: "5"
+  company:
+    maxConcurrency: "5"
 
-lastUpdatedTime: ""
- 
-errorCodeMessage:
-  http:
-    badRequest:
-      code: "400"    
-  
-query:
-  contact: "select of_BOFU_Submissions__c,MailingStreet,Became_an_Other_Lifecycle_Date__c,Account_Name_Text__c,LeadSource,Hubspot_Contact_Type__c,MailingCountry,Date_Lead_Became_Rejected__c,Do_Not_Call__c,DoiT_Parent_Sales_Region__c,Event_Name__c,Fax,Hot_Lead__c,Buying_Role__c,Do_Not_Contact__c,hasoptedoutofemail,Hubspot_Lead_Status__c,Persona__c,Hubspot_Country__c,OwnerId,Lead_Score__c,Lead_Score_Band__c,Lead_Source_Detail__c,Status__c,Minimum_Required_Information__c,MQL_Achievement_Reason__c,NPS_Opt_In__c,Event_Date__c,SalesLoft1__Most_Recent_Cadence_Name__c,MailingPostalCode, LastModifiedDate from contact"
-  where:
-    clause: " where LastModifiedDate >= "
-  
-  
-#objectStore Configurations
+min-time:
+  contact: "1686261872865"
+  company: "1686814994705"
 
 scheduler:
-  frequency: "15"
-  startDelay: "0"
+  frequency: "4"
+
+form:
+  Type: "Hubspot Form Fill"
+  RecordTypeId : "01276000000CrWY"
+  AssignedTo :  "00576000001aTlhAAE" 
+  Status : "Completed" 
+        
+salesforce-sapi:
+  host: "doit-salesforce-sapi.us-e2.cloudhub.io"
+  port: ""         #for https, Otherwise for http:8081
+#  host: "localhost"
+#  port: "8082"
+  protocol: "HTTP"
+  basepath: "/api"
+  responseBufferSize: "1024"
+  maxConnections: "-1"
+  connectionIdleTimeout: "30000"
+  responseTimeout: "600000"
+  baseurl: ""
+  reconnection:
+    frequency: "2000"
+    attempt: "5"
+    
+hubspot-sapi:
+  host: "doit-hubspot-sapi.us-e2.cloudhub.io"
+  port: ""         #for https, Otherwise for http:8081       
+#  host: "localhost"
+#  port: "8081"
+  protocol: "HTTP"
+  basepath: "/api"
+  responseBufferSize: "1024"
+  maxConnections: "-1"
+  connectionIdleTimeout: "30000"
+  responseTimeout: "60000"
+  baseurl: ""
+  reconnection:
+    frequency: "2000"
+    attempt: "5"

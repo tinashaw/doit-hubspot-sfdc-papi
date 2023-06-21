@@ -30,8 +30,10 @@ var picklist = readUrl("classpath://picklist.json", "application/json")
 	"Id" : payload.properties.sfdc_account_id.value ,
 	("Became_a_Former_Customer__c" : payload.properties.sfdc_became_a_former_customer.value as Number as DateTime {unit : "milliseconds"}) if(payload.properties.sfdc_became_a_former_customer.value != null) ,
 	"Segment__c" : payload.properties.sfdc_segment.value ,
-//	"Sub_Region__c" : payload.properties.sfdc_sub_region.value ,
-//	"Sub_Industry__c" : payload.properties.sub_industry__c.value ,
+	//("Sub_Region__c" : picklist.company.Sub_Region__c[(payload.properties.sfdc_sub_region.value)])if(payload.properties.sfdc_sub_region.value != null) ,
+	//("Sub_Industry__c" : picklist.company.Sub_Industry__c[(payload.properties.sub_industry__c.value)])if(payload.properties.sub_industry__c.value != null) ,
+//	"Sub_Region__c" :"France",
+//	"Sub_Industry__c" :"Apparel, Accessories & Luxury Goods",
 	"Type" : payload.properties.'type'.value ,
 	"Website" : payload.properties.website.value ,
 	"Hubspot_Company_ID__c" : payload.companyId as String

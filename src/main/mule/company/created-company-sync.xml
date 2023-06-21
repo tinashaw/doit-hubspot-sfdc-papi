@@ -24,7 +24,7 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 		<choice doc:name="is ownerId = Null ?" doc:id="2244e4ae-2090-438c-a3b7-dec02fcce2cd">
 			<when expression="#[!isEmpty(vars.ownerId)]">
 				<set-variable value="#[vars.ownerId]" doc:name="ownerId" doc:id="d1676b09-367d-46d1-a627-4aece00c0cd7" variableName="ownerId" />
-				<flow-ref doc:name="Flow Ref to get-salesforce-ownerIdFlow" doc:id="c435db7f-4679-4493-a6d8-5eef9a304a21" name="get-salesforce-ownerIdFlow" target="ownerId" />
+				<flow-ref doc:name="Flow Ref to get-salesforce-ownerId-flow" doc:id="c435db7f-4679-4493-a6d8-5eef9a304a21" name="get-salesforce-ownerId-flow" target="ownerId" />
 			</when>
 			<otherwise>
 				<logger level="INFO" doc:name="ownerId is null" doc:id="8a3e6688-9e16-42fe-abe0-553af027ef9b" message='#["ownerId is null"]' />
@@ -37,7 +37,7 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 			<ee:variables >
 			</ee:variables>
 		</ee:transform>
-		<http:request method="POST" doc:name="Request SF to create account" doc:id="576a0f73-44fc-40f0-8d87-90ea8cb94207" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/account/create">
+		<http:request method="POST" doc:name="Request SF to create account" doc:id="576a0f73-44fc-40f0-8d87-90ea8cb94207" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/account/create" sendCorrelationId="ALWAYS">
 		</http:request>
 		<choice doc:name="If Successful ?" doc:id="fbc226a5-fb6b-42a2-bd99-4adb2f5f7d85">
 			<when expression="#[payload.successful]">
@@ -67,7 +67,7 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 				<ee:set-payload resource="dwl/company/create/msg-hubspot-expected-format.dwl" />
 			</ee:message>
 		</ee:transform>
-		<http:request method="POST" doc:name="Update Company in Hubspot" doc:id="21b60460-567c-4ab5-b7e9-d434ec4c0392" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/company/update" >
+		<http:request method="POST" doc:name="Update Company in Hubspot" doc:id="21b60460-567c-4ab5-b7e9-d434ec4c0392" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/company/update" sendCorrelationId="ALWAYS">
 			<http:query-params ><![CDATA[#[output application/java
 ---
 {

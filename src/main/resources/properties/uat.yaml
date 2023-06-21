@@ -1,6 +1,6 @@
-env: "dev"
+env: "uat"
 app:
-  name: "doit-hubspot-sfdc-papi-dev"
+  name: "doit-hubspot-sfdc-papi-test"
   
 api:
   host: "0.0.0.0"

@@ -5,8 +5,8 @@
 	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
-	<flow name="get-salesforce-ownerIdFlow" doc:id="792c6d26-ad58-4086-8699-3dc848d7fbe1" >
-		<http:request method="GET" doc:name="Get hubspot owner by id" doc:id="8c762758-dd82-4924-adb6-f062130fcd9f" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/owner/id" responseTimeout="60000" target="ownerId" >
+	<flow name="get-salesforce-ownerId-flow" doc:id="792c6d26-ad58-4086-8699-3dc848d7fbe1" >
+		<http:request method="GET" doc:name="Get hubspot owner by id" doc:id="8c762758-dd82-4924-adb6-f062130fcd9f" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/owner/id" responseTimeout="60000" target="ownerId" sendCorrelationId="ALWAYS">
 			<http:query-params ><![CDATA[#[output application/java
 ---
 {
@@ -14,7 +14,7 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 }]]]></http:query-params>
 
 		</http:request>
-		<ee:transform doc:name="Transform Message" doc:id="7cfa422d-ca5c-405b-9fcd-788a56ecbd1e" >
+		<ee:transform doc:name="Set Email" doc:id="7cfa422d-ca5c-405b-9fcd-788a56ecbd1e" >
 			<ee:message />
 			<ee:variables >
 				<ee:set-variable variableName="email" ><![CDATA[%dw 2.0
@@ -23,14 +23,14 @@ output application/json
 (vars.ownerId.email) as String]]></ee:set-variable>
 			</ee:variables>
 		</ee:transform>
-		<http:request method="GET" doc:name="Request" doc:id="9f015a53-bba5-413b-98b3-f6ea450bd169" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/user/email" responseTimeout="60000" >
+		<http:request method="GET" doc:name="Request SF to get user details" doc:id="9f015a53-bba5-413b-98b3-f6ea450bd169" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/user/email" responseTimeout="60000" sendCorrelationId="ALWAYS">
 			<http:query-params ><![CDATA[#[output application/java
 ---
 {
 	"email" : vars.email
 }]]]></http:query-params>
 		</http:request>
-		<ee:transform doc:name="Transform Message" doc:id="8fb124b1-1014-45c1-84d5-219885f90905" >
+		<ee:transform doc:name="ownerid" doc:id="8fb124b1-1014-45c1-84d5-219885f90905" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
@@ -39,17 +39,17 @@ payload.Id[0]]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
 	</flow>
-	<flow name="get-hubspot-ownerIdFlow" doc:id="b7fbb0e8-11a4-46da-804f-55cfa3e6ecc9" >
-		<http:request method="GET" doc:name="Request" doc:id="f1e2bc3d-0e78-4295-91f7-72e91c3a9fcc" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/user/id" target="ownerId" responseTimeout="60000">
+	<flow name="get-hubspot-ownerId-flow" doc:id="b7fbb0e8-11a4-46da-804f-55cfa3e6ecc9" >
+		<http:request method="GET" doc:name="Request SF to get user details" doc:id="f1e2bc3d-0e78-4295-91f7-72e91c3a9fcc" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/user/id" target="ownerId" responseTimeout="60000" sendCorrelationId="ALWAYS">
 			<http:query-params ><![CDATA[#[output application/java
 ---
 {
 	"ownerId" : vars.ownerId
 }]]]></http:query-params>
 		</http:request>
-		<choice doc:name="Choice" doc:id="53c2de1c-c7bd-407e-9ffe-0187425b0cc6" >
+		<choice doc:name="If FederationIdentifier != Null" doc:id="53c2de1c-c7bd-407e-9ffe-0187425b0cc6" >
 			<when expression="#[!isEmpty(vars.ownerId.FederationIdentifier[0])]">
-				<ee:transform doc:name="Transform Message" doc:id="0a2a1851-4d14-412e-8bf9-2b651a407a6c">
+				<ee:transform doc:name="Set Email" doc:id="0a2a1851-4d14-412e-8bf9-2b651a407a6c">
 			<ee:message>
 			</ee:message>
 			<ee:variables>
@@ -59,7 +59,7 @@ output application/json
 (vars.ownerId.FederationIdentifier[0]) as String]]></ee:set-variable>
 			</ee:variables>
 		</ee:transform>
-				<http:request method="GET" doc:name="Get hubspot owner by email" doc:id="b819f031-bfc5-4dd0-aea9-18075a397351" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/owner/email" responseTimeout="#[p('hubspot-sapi.responseTimeout')]">
+				<http:request method="GET" doc:name="Get hubspot owner by email" doc:id="b819f031-bfc5-4dd0-aea9-18075a397351" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/owner/email" responseTimeout="#[p('hubspot-sapi.responseTimeout')]" sendCorrelationId="ALWAYS">
 					<http:query-params ><![CDATA[#[output application/java
 ---
 {
@@ -67,7 +67,7 @@ output application/json
 }]]]></http:query-params>
 		
 </http:request>
-				<ee:transform doc:name="Transform Message" doc:id="bce1403e-10b9-4dca-a3e0-d0a90933ff8b">
+				<ee:transform doc:name="ownerid" doc:id="bce1403e-10b9-4dca-a3e0-d0a90933ff8b">
 			<ee:message>
 				<ee:set-payload><![CDATA[%dw 2.0
 output application/json
@@ -77,8 +77,8 @@ payload.ownerId[0]]]></ee:set-payload>
 		</ee:transform>
 			</when>
 			<otherwise >
-				<logger level="INFO" doc:name="Logger" doc:id="65688aa9-da78-4ce8-82f0-435764d1c505" message="No Email found"/>
-				<ee:transform doc:name="Transform Message" doc:id="f11798b5-94e1-4f66-9183-be00f24694d0" >
+				<logger level="INFO" doc:name="No FederationIdentifier found" doc:id="65688aa9-da78-4ce8-82f0-435764d1c505" message="No FederationIdentifier found"/>
+				<ee:transform doc:name="Set response Payload" doc:id="f11798b5-94e1-4f66-9183-be00f24694d0" >
 					<ee:message >
 						<ee:set-payload ><![CDATA[%dw 2.0
 output application/json

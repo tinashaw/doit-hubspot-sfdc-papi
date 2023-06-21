@@ -1,15 +1,11 @@
+env: "local"
+app:
+  name: "doit-hubspot-sfdc-papi-local"
+  
 api:
   host: "0.0.0.0"
   port: "8084"
   timeout: "40000"  
-      
-salesforce:
-  token_endpoint: ""
-  audience_url: "https://test.salesforce.com"
-  system:
-    URL: "https://doit-intl--stage.sandbox.my.salesforce.com"
-    username: "udit.khare+sandbox1@apisero.com"
-    authorization_url: "https://test.salesforce.com/services/Soap/u/55.0"
 
 url:
   recentmodifiedcount: "20"
@@ -19,33 +15,41 @@ parallelForEach:
     maxConcurrency: "5"
   company:
     maxConcurrency: "5"
+
+min-time:
+  contact: "1686261872865"
+  company: "1686814994705"
+
+scheduler:
+  frequency: "4"
+
 form:
   Type: "Hubspot Form Fill"
   RecordTypeId : "01276000000CrWY"
   AssignedTo :  "00576000001aTlhAAE" 
   Status : "Completed" 
-    
-recentcreatedcontact:
-  lastmodifiedtime: "1682248414000"
-  
+        
 salesforce-sapi:
-#  host: "doit-salesforce-sapi.us-e2.cloudhub.io"
-#  port: ""         #for https, Otherwise for http:8081
-  host: "localhost"
-  port: "8082"
+  host: "doit-salesforce-sapi.us-e2.cloudhub.io"
+  port: ""         #for https, Otherwise for http:8081
+#  host: "localhost"
+#  port: "8082"
   protocol: "HTTP"
   basepath: "/api"
   responseBufferSize: "1024"
   maxConnections: "-1"
   connectionIdleTimeout: "30000"
-  responseTimeout: "60000"
+  responseTimeout: "600000"
   baseurl: ""
-
+  reconnection:
+    frequency: "2000"
+    attempt: "5"
+    
 hubspot-sapi:
-#  host: "doit-hubspot-sapi-aj0bf.5sc6y6-3.usa-e2.cloudhub.io"
-#  port: ""         #for https, Otherwise for http:8081       
-  host: "localhost"
-  port: "8081"
+  host: "doit-hubspot-sapi.us-e2.cloudhub.io"
+  port: ""         #for https, Otherwise for http:8081       
+#  host: "localhost"
+#  port: "8081"
   protocol: "HTTP"
   basepath: "/api"
   responseBufferSize: "1024"
@@ -53,3 +57,6 @@ hubspot-sapi:
   connectionIdleTimeout: "30000"
   responseTimeout: "60000"
   baseurl: ""
+  reconnection:
+    frequency: "2000"
+    attempt: "5"
