@@ -8,9 +8,6 @@ http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/htt
 http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
 http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
 http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd">
-	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="0981399b-2e77-41a0-a3bf-c982deff33a9" >
-		<http:listener-connection host="${api.host}" port="${api.port}" readTimeout="${api.timeout}"/>
-	</http:listener-config>
 	<configuration-properties doc:name="Configuration properties" doc:id="4cae6e0d-7481-41fc-a713-fd91d4cbb15b" file="properties/${mule.env}.yaml" />
 	<global-property doc:name="Global Property" doc:id="95e0b076-db2f-40a0-92f1-f1f89d26e382" name="mule.key" value="DoiT123" />
 	<global-property doc:name="Global Property" doc:id="ce4d1257-e931-4b17-a559-c7a1b6fd6039" name="mule.env" value="dev" />
