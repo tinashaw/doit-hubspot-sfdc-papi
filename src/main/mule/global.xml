@@ -9,8 +9,6 @@ http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/cu
 http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
 http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd">
 	<configuration-properties doc:name="Configuration properties" doc:id="4cae6e0d-7481-41fc-a713-fd91d4cbb15b" file="properties/${mule.env}.yaml" />
-	<global-property doc:name="Global Property" doc:id="95e0b076-db2f-40a0-92f1-f1f89d26e382" name="mule.key" value="DoiT123" />
-	<global-property doc:name="Global Property" doc:id="ce4d1257-e931-4b17-a559-c7a1b6fd6039" name="mule.env" value="dev" />
 	<http:request-config name="HTTP_Request_configuration_hubspot_sapi" doc:name="HTTP Request configuration" doc:id="2a397dfa-fb76-45d1-a20f-606ab73564a1" basePath="${hubspot-sapi.basepath}">
 		<http:request-connection host="${hubspot-sapi.host}" port="${hubspot-sapi.port}" protocol="${hubspot-sapi.protocol}" maxConnections="${hubspot-sapi.maxConnections}" connectionIdleTimeout="${hubspot-sapi.connectionIdleTimeout}" responseBufferSize="${hubspot-sapi.responseBufferSize}">
 			<reconnection >
