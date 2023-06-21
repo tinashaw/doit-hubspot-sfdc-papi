@@ -67,7 +67,7 @@ payload filter ((item, index) -> sizeOf(item."form-submissions") > 0 ) default [
 							</choice>
 						</when>
 						<otherwise>
-							<logger level="INFO" doc:name="Info Log" doc:id="9f37c05b-f1ea-4609-9ab0-798afd86b740" message="Task is Already present for #[payload]" />
+							<logger level="INFO" doc:name="Info Log" doc:id="9f37c05b-f1ea-4609-9ab0-798afd86b740" message="Task is Already with Id #[vars.sfTask.Id] present for #[payload]" />
 						</otherwise>
 					</choice>
 						</when>
