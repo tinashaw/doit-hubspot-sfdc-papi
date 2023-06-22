@@ -17,8 +17,8 @@ parallelForEach:
     maxConcurrency: "5"
 
 min-time:
-  contact: "1686261872865"
-  company: "1686814994705"
+  contact: "1687261167470"
+  company: "1687261167470"
 
 scheduler:
   frequency: "4"
