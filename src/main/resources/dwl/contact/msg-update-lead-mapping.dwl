@@ -39,7 +39,7 @@ var picklist = readUrl("classpath://picklist.json", "application/json")
 		("Hubspot_Lead_Status__c" : picklist.contact.Hubspot_Lead_Status__c[(payload.properties.hs_lead_status.value)])if(payload.properties.hs_lead_status.value != null),
 		("Marketing_Contact_Status__c" : picklist.contact.hs_marketable_status[(payload.properties.hs_marketable_status.value)])if(payload.properties.hs_marketable_status.value != null),
 		"Persona__c" :payload.properties.hs_persona.value,
-	//	"Hubspot_Contact_ID__c" : vars.id.vid as String,
+		"Hubspot_Contact_ID__c" : (vars.id.vid default vars.vid) as String,
 		("OwnerId": vars.hubspot_owner_id)if(vars.hubspot_owner_id != null),
 		"Industry_Text__c" : payload.properties.industry.value ,
 		"Title" : payload.properties.jobtitle.value ,

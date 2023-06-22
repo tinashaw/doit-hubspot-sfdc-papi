@@ -56,5 +56,6 @@ var picklist = readUrl("classpath://picklist.json", "application/json")
 	"of_Marketing_Emails_Clicked__c" : payload.properties.hs_email_click.value,
 	"of_Marketing_Emails_Opened__c" : payload.properties.hs_email_open.value,
 	("First_Click__c" : payload.properties.hs_email_first_click_date.value  as Number as DateTime {unit : "milliseconds"})if(payload.properties.hs_email_first_click_date.value != null), //datetime,
-	"First_Opened__c" : payload.properties.hs_email_first_open_date.value,
+	("First_Opened__c" : payload.properties.hs_email_first_open_date.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.hs_email_first_open_date.value != null),
+	"Hubspot_Company_ID__c" : payload.properties.associatedcompanyid.value
 }]

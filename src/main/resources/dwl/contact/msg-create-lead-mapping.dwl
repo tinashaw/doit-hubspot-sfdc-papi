@@ -39,7 +39,7 @@ var picklist = readUrl("classpath://picklist.json", "application/json")
 		("Hubspot_Lead_Status__c" : picklist.contact.Hubspot_Lead_Status__c[(payload.properties.hs_lead_status.value)])if(payload.properties.hs_lead_status.value != null),
 		("Marketing_Contact_Status__c" : picklist.contact.hs_marketable_status[(payload.properties.hs_marketable_status.value)])if(payload.properties.hs_marketable_status.value != null),
 		"Persona__c" :payload.properties.hs_persona.value,
-	//	"Hubspot_Contact_ID__c" : vars.id.vid as String,
+		"Hubspot_Contact_ID__c" : (vars.id.vid default vars.vid) as String,
 		("OwnerId": vars.hubspot_owner_id)if(vars.hubspot_owner_id != null),
 		"Industry_Text__c" : payload.properties.industry.value ,
 		"Title" : payload.properties.jobtitle.value ,
@@ -61,7 +61,7 @@ var picklist = readUrl("classpath://picklist.json", "application/json")
 		"of_Marketing_Emails_Clicked__c" : payload.properties.hs_email_click.value ,
 		"of_Marketing_Emails_Opened__c" : payload.properties.hs_email_open.value ,
 		("First_Click__c" : payload.properties.hs_email_first_click_date.value  as Number as DateTime {unit : "milliseconds"})if(payload.properties.hs_email_first_click_date.value != null), //datetime,
-		"First_Opened__c" : payload.properties.hs_email_first_open_date.value ,
+		("First_Opened__c" : payload.properties.hs_email_first_open_date.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.hs_email_first_open_date.value != null),
 		("Account__c": vars.accountId)if(vars.accountId != null or vars.accountId != "" ),
 		"Hubspot_Company_ID__c" : payload.properties.associatedcompanyid.value
 	}]
