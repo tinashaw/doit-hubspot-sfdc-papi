@@ -74,8 +74,8 @@
 				"Vendor": "Vendor"
 		},
 		"Do_Not_Call__c": {
-				"Yes": "true ",
-				"No": "false "
+				"true": "Yes",
+				"false": "No"
 		},
 		"DoiT_Parent_Sales_Region__c": {
 				"ANZ": "ANZ",
@@ -87,37 +87,31 @@
 				"UK": "UK"
 		},
 		"Hot_Lead__c": {
-				"Yes": "true ",
-				"No": "false "			
+				"true": "Yes",
+				"false": "No"	
 		},
-		"hot_lead":
-		{
-			"true" : "Yes" ,
-			 "false" : "No"
-		},
-		
 		"Buying_Role__c": {
-				"Blocker": "BLOCKER",
-				"Budget Holder": "BUDGET_HOLDER",
-				"Champion": "CHAMPION",
-				"Decision Maker": "DECISION_MAKER",
-				"End User": "END_USER",
-				"Executive Sponsor": "EXECUTIVE_SPONSOR",
-				"Influencer": "INFLUENCER",
-				"Legal & Compliance": "LEGAL_AND_COMPLIANCE",
-				"Other": "OTHER"
+				"BLOCKER" : "Blocker",
+				"BUDGET_HOLDER" : "Budget Holder",
+				"CHAMPION" : "Champion",
+				"DECISION_MAKER" : "Decision Maker",
+				"END_USER" : "End User",
+				"EXECUTIVE_SPONSOR" : "Executive Sponsor",
+				"INFLUENCER" : "Influencer",
+				"LEGAL_AND_COMPLIANCE" : "Legal & Compliance",
+				"OTHER" : "Other"
 		},
 		"Hubspot_Lead_Status__c": {
-				"In Progress": "IN_PROGRESS",
-				"Accepted": "Accepted",
-				"Rejected - Existing deal/customer": "Rejected - Existing deal/customer",
-				"Rejected - Competitor/Partner": "Rejected - Competitor/Partner",
-				"Rejected - No Response": "Rejected - No Response",
-				"Rejected - Not a Sales Inquiry/Other": "REJECTED_NOT_SALES",
-				"Open": "OPEN",
-				"New": "NEW",
-				"Connected": "CONNECTED",
-				"Discovery Call Scheduled - Create deal": "Discovery Call Scheduled - Create deal"
+				"IN_PROGRESS":"In Progress",
+				"Accepted":"Accepted",
+				"Rejected - Existing deal/customer":"Rejected - Existing deal/customer",
+				"Rejected - Competitor/Partner":"Rejected - Competitor/Partner",
+				"Rejected - No Response":"Rejected - No Response",
+				"REJECTED_NOT_SALES":"Rejected - Not a Sales Inquiry/Other",
+				"OPEN":"Open",
+				"NEW":"New",
+				"CONNECTED":"Connected",
+				"Discovery Call Scheduled - Create deal":"Discovery Call Scheduled - Create deal"
 		},
 		"hs_persona": {
 				"persona_5":"Demo Dan",
@@ -161,13 +155,13 @@
 				"Appointment Setting": "Appointment Setting",
 				"Attended Event": "Attended Event",
 				"Attended Webinar": "Attended Webinar",
-				"CMP Test Drive Inquiry": "Test Drive Talk to Sales",
+				"CMP Test Drive Inquiry": "CMP Test Drive Inquiry",
 				"Drift": "Drift",
 				"Event Hand Raiser": "Event Hand Raiser",
 				"Flexsave Hand Raiser": "Flexsave Hand Raiser",
-				"FlexSave Inquiry": "FlexSave",
-				"Hand Raiser Submission": "BOFU Submission",
-				"ISV Program Inquiry": "ISV Program",
+				"FlexSave Inquiry": "FlexSave Inquiry",
+				"Hand Raiser Submission": "Hand Raiser Submission",
+				"ISV Program Inquiry": "ISV Program Inquiry",
 				"Lead Scoring": "Lead Scoring",
 				"Other": "Other",
 				"Scale Team": "Scale Team"
@@ -181,8 +175,8 @@
 				"No": "No"
 		},
 		"hs_marketable_status": {
-				"true": "true",
-				"false": "false"
+				"true": "True",
+				"false": "False"
 		},
 		"lifecycle_stage__c": {
 				"Customer": "Customer",
@@ -195,19 +189,74 @@
 				"Subscriber": "Subscriber",
 				"Tele Accepted Lead": "Tele Accepted Lead"
 		},
-		
-		"hs_buying_role":
-			{			
-			"BLOCKER" : "Blocker",
-			"BUDGET_HOLDER" : "Budget Holder",
-			"CHAMPION" : "Champion",
-			"DECISION_MAKER" : "Decision Maker",
-			"END_USER" : "End User",
-			"EXECUTIVE_SPONSOR" : "Executive Sponsor",
-			"INFLUENCER" : "Influencer",
-			"LEGAL_AND_COMPLIANCE" : "Legal & Compliance",
-			"OTHER" : "Other"
-			}
+		"mql_achievement_reason": {
+				"Appointment Setting": "Appointment Setting",
+				"Attended Event": "Attended Event",
+				"Attended Webinar": "Attended Webinar",
+				"Test Drive Talk to Sales": "CMP Test Drive Inquiry", 
+				"Drift": "Drift",
+				"Event Hand Raiser": "Event Hand Raiser",
+				"Flexsave Hand Raiser": "Flexsave Hand Raiser",
+				"FlexSave": "FlexSave Inquiry",
+				"BOFU Submission": "Hand Raiser Submission",
+				"ISV Program": "ISV Program Inquiry",
+				"Lead Scoring": "Lead Scoring",
+				"Other": "Other",
+				"Scale Team": "Scale Team"
+		},
+		"hs_buying_role":{			
+				"BLOCKER" : "Blocker",
+				"BUDGET_HOLDER" : "Budget Holder",
+				"CHAMPION" : "Champion",
+				"DECISION_MAKER" : "Decision Maker",
+				"END_USER" : "End User",
+				"EXECUTIVE_SPONSOR" : "Executive Sponsor",
+				"INFLUENCER" : "Influencer",
+				"LEGAL_AND_COMPLIANCE" : "Legal & Compliance",
+				"OTHER" : "Other"
+		},
+		"hot_lead":{
+				"true" : "Yes" ,
+				"false" : "No"
+		},
+		"unqualified_reason__c": {
+				"Bad Timing":"Bad Timing",
+				"Low Spend":"Low Spend",
+				"Marked as DNC":"Marked as DNC",
+				"Other":"Other",
+				"Referred to different contact":"Referred to different contact",
+				"Partner":"Partner",
+				"Not a Sales Inquiry":"Not a Sales Inquiry",
+				"No Response":"No Response",
+				"Competitor":"Competitor",
+				"Existing Deal/Customer":"Existing Deal/Customer"
+		}
+	},
+	"company":{
+		"cmp_g_suite":{
+			"true": "Yes",
+			"false": "No"
+		},
+		"cmp_google_cloud":{
+			"true": "Yes",
+			"false": "No"
+		},
+		"cmp_microsoft_azure":{
+			"true": "Yes",
+			"false": "No"
+		},
+		"cmp_office_365":{
+			"true": "Yes",
+			"false": "No"
+		},
+		"flexsave_gcp_marketplace":{
+			"True": "true",
+			"False": "false"
+		},
+		"marketing_right":{
+			"true": "Yes",
+			"false": "No"
+		}
 	}
 }
 		

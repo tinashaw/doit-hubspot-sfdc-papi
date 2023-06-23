@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="created-company-sync-flow" doc:id="02455f51-a119-46ce-a711-6bbd831ee3e8" >
+		<logger level="INFO" doc:name="Log Started" doc:id="b14a657d-d539-4bb4-9499-8369b670ad7a" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  env : Mule::p('env'),&#10;  transactionId : correlationId,&#10;  applicationName : Mule::p('app.name'),&#10;  flowName : &quot;Hubspot company to Salesforce Account Creation flow&quot;,&#10;  status: &quot;Started&quot;,&#10;  timestamp : now()&#10;}]" />
+		<http:request method="GET" doc:name="Request HS to get Company Details" doc:id="60ed7ab9-4526-4959-9302-dc4bb8a5078e" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/company/{companyid}" sendCorrelationId="ALWAYS">
+			<http:uri-params ><![CDATA[#[output application/java
+---
+{
+	companyid : payload
+}]]]></http:uri-params>
+		</http:request>
+		<ee:transform doc:name="Set ownerId" doc:id="223ebea8-65a7-4415-b019-5291da8aa370">
+			<ee:message />
+			<ee:variables>
+				<ee:set-variable resource="dwl/company/create/var-hubspot-owner-id.dwl" variableName="ownerId" />
+				<ee:set-variable resource="dwl/company/create/var-companyid.dwl" variableName="companyId" />
+			</ee:variables>
+		</ee:transform>
+		<choice doc:name="is ownerId = Null ?" doc:id="2244e4ae-2090-438c-a3b7-dec02fcce2cd">
+			<when expression="#[!isEmpty(vars.ownerId)]">
+				<set-variable value="#[vars.ownerId]" doc:name="ownerId" doc:id="d1676b09-367d-46d1-a627-4aece00c0cd7" variableName="ownerId" />
+				<flow-ref doc:name="Flow Ref to get-salesforce-ownerId-flow" doc:id="c435db7f-4679-4493-a6d8-5eef9a304a21" name="get-salesforce-ownerId-flow" target="ownerId" />
+			</when>
+			<otherwise>
+				<logger level="INFO" doc:name="ownerId is null" doc:id="8a3e6688-9e16-42fe-abe0-553af027ef9b" message='#["ownerId is null"]' />
+			</otherwise>
+		</choice>
+		<ee:transform doc:name="Mapping" doc:id="875abbc8-0095-4bb0-9452-3cedc9210b1c" >
+			<ee:message >
+				<ee:set-payload resource="dwl/company/create/msg-mapping.dwl" />
+			</ee:message>
+			<ee:variables >
+			</ee:variables>
+		</ee:transform>
+		<http:request method="POST" doc:name="Request SF to create account" doc:id="576a0f73-44fc-40f0-8d87-90ea8cb94207" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/account/create" sendCorrelationId="ALWAYS">
+		</http:request>
+		<choice doc:name="If Successful ?" doc:id="fbc226a5-fb6b-42a2-bd99-4adb2f5f7d85">
+			<when expression="#[payload.successful]">
+				<ee:transform doc:name="Successful Response" doc:id="decdacfe-c23a-4923-9883-7cea6d44e72a">
+					<ee:message>
+						<ee:set-payload resource="dwl/company/create/msg-successful-response.dwl" />
+					</ee:message>
+					<ee:variables />
+				</ee:transform>
+				<logger level="INFO" doc:name="Log Account Created" doc:id="c2d22d8c-ed37-45b4-9722-19e97cb6887f" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  "Hubspot_Company_ID__c": vars.companyId,&#10;  "Account Id": payload.sfdc_account_id,&#10;  "Message": "Company Created in Salesforce"&#10;}]' />
+				<flow-ref doc:name="Flow Ref to salesforce-Ids-sync-backFlow" doc:id="cac9846c-418f-4250-9c6b-4540e768aa8a" name="company-to-account-sync-back" target="syncBackResponse"/>
+			</when>
+			<otherwise>
+				<ee:transform doc:name="Failed Response" doc:id="625dfe31-777c-404e-a783-e6296d8d1b71">
+					<ee:message>
+						<ee:set-payload resource="dwl/company/create/msg-failed-message.dwl" />
+					</ee:message>
+				</ee:transform>
+				<logger level="ERROR" doc:name="Log error message" doc:id="a6057442-e15a-4fc1-8dcd-297cab84274c" message="#[payload]" />
+			</otherwise>
+		</choice>
+		<logger level="INFO" doc:name="Log Completed" doc:id="3b18e320-b2f9-4d8d-95f8-d36f8929402d" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  env : Mule::p('env'),&#10;  transactionId : correlationId,&#10;  applicationName : Mule::p('app.name'),&#10;  flowName : &quot;Hubspot company to Salesforce Account Creation flow&quot;,&#10;  status: &quot;Completed&quot;,&#10;  timestamp : now()&#10;}]" />
+	</flow>
+	<sub-flow name="company-to-account-sync-back" doc:id="421ed3a5-022c-4f7a-8e3f-e7ef469b917a" >
+		<ee:transform doc:name="Set HS expected Payload" doc:id="24551d04-335d-4903-9f71-13e4ea72301d" >
+			<ee:message >
+				<ee:set-payload resource="dwl/company/create/msg-hubspot-expected-format.dwl" />
+			</ee:message>
+		</ee:transform>
+		<http:request method="POST" doc:name="Update Company in Hubspot" doc:id="21b60460-567c-4ab5-b7e9-d434ec4c0392" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/company/update" sendCorrelationId="ALWAYS">
+			<http:query-params ><![CDATA[#[output application/java
+---
+{
+	companyId : vars.companyId
+}]]]></http:query-params>
+		</http:request>
+	</sub-flow>
+</mule>

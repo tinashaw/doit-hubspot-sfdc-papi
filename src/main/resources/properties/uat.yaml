@@ -1,0 +1,62 @@
+env: "test"
+app:
+  name: "doit-hubspot-sfdc-papi-test"
+  
+api:
+  host: "0.0.0.0"
+  port: "8084"
+  timeout: "40000"  
+
+url:
+  recentmodifiedcount: "20"
+  
+parallelForEach:
+  contact-lead:
+    maxConcurrency: "5"
+  company:
+    maxConcurrency: "5"
+
+min-time:
+  contact: "1687261167470"
+  company: "1687261167470"
+
+scheduler:
+  frequency: "4"
+
+form:
+  Type: "Hubspot Form Fill"
+  RecordTypeId : "01276000000CrWY"
+  AssignedTo :  "0058c00000An1bgAAB" 
+  Status : "Completed" 
+        
+salesforce-sapi:
+  host: "doit-salesforce-sapi-test.us-e2.cloudhub.io"
+  port: ""         #for https, Otherwise for http:8081
+#  host: "localhost"
+#  port: "8082"
+  protocol: "HTTP"
+  basepath: "/api"
+  responseBufferSize: "1024"
+  maxConnections: "-1"
+  connectionIdleTimeout: "30000"
+  responseTimeout: "600000"
+  baseurl: ""
+  reconnection:
+    frequency: "2000"
+    attempt: "5"
+    
+hubspot-sapi:
+  host: "doit-hubspot-sapi-test.us-e2.cloudhub.io"
+  port: ""         #for https, Otherwise for http:8081       
+#  host: "localhost"
+#  port: "8081"
+  protocol: "HTTP"
+  basepath: "/api"
+  responseBufferSize: "1024"
+  maxConnections: "-1"
+  connectionIdleTimeout: "30000"
+  responseTimeout: "60000"
+  baseurl: ""
+  reconnection:
+    frequency: "2000"
+    attempt: "5"

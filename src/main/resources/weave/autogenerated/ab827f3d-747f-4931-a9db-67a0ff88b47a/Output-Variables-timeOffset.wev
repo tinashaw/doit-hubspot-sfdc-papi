@@ -1,0 +1,4 @@
+%dw 2.0
+
+type auto_ab827f3d_747f_4931_a9db_67a0ff88b47a_Output_Variables_timeOffset = Any
+

@@ -1,0 +1,4 @@
+%dw 2.0
+
+type auto_421ed3a5_022c_4f7a_8e3f_e7ef469b917a_Input_Variables_email = String
+

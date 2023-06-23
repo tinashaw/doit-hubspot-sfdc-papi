@@ -6,53 +6,125 @@
 http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
-	<flow name="updated-company-schedularFlow" doc:id="ed3ba485-2aa0-4f34-9fd0-0f4f9c1a73a5" >
-		<scheduler doc:name="Scheduler" doc:id="fcb8b73d-84b6-4c9d-b04c-973189e941c2" >
+	<flow name="updated-company-schedular-flow" doc:id="ed3ba485-2aa0-4f34-9fd0-0f4f9c1a73a5">
+		<scheduler doc:name="Scheduler every minute" doc:id="fcb8b73d-84b6-4c9d-b04c-973189e941c2" >
 			<scheduling-strategy >
-				<fixed-frequency />
+				<fixed-frequency timeUnit="MINUTES" frequency="${scheduler.frequency}"/>
 			</scheduling-strategy>
 		</scheduler>
-		<os:retrieve doc:name="Retrieve minTime" doc:id="6b30ecee-8e9e-4bde-a989-72a46939ce0c" key="minTime-company" objectStore="Object_store" target="minTime" >
-			<os:default-value ><![CDATA[#["1685001414195"]]]></os:default-value>
+		<logger level="INFO" doc:name="Log Started" doc:id="b35705c1-34f7-4263-bab6-ba6a0b0cf407" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  env : Mule::p('env'),&#10;  transactionId : correlationId,&#10;  applicationName : Mule::p('app.name'),&#10;  flowName : &quot;Hubspot company to Salesforce Account Updation flow&quot;,&#10;  status: &quot;Started&quot;,&#10;  timestamp : now()&#10;}]" />
+		<os:retrieve doc:name="Retrieve minTimeCompany" doc:id="6b30ecee-8e9e-4bde-a989-72a46939ce0c" key="minTimeCompany" objectStore="Object_store" target="minTimeCompany" >
+			<os:default-value ><![CDATA[#[p('min-time.company')]]]></os:default-value>
 		</os:retrieve>
-<!-- [STUDIO:"Set Variable timeOffset"]		<set-variable value='#[""]' doc:name="Set Variable timeOffset" doc:id="f5e2c8f7-fcb9-4142-83f5-3740594d10a1" variableName="timeOffset" /> [STUDIO] -->
-		<flow-ref doc:name="Flow Ref to updated-company-syncSub_Flow" doc:id="a344d2de-1242-4ab5-ad5e-ef68b9f6a358" name="updated-company-syncSub_Flow" />
+		<set-variable value='#[""]' doc:name="Set Variable offset" doc:id="f5e2c8f7-fcb9-4142-83f5-3740594d10a1" variableName="offset" />
+		<flow-ref doc:name="Flow Ref to aggregate-company-ids-subflow" doc:id="a344d2de-1242-4ab5-ad5e-ef68b9f6a358" name="aggregate-company-ids-subflow" />
 	</flow>
-	<sub-flow name="updated-company-syncSub_Flow" doc:id="11e107db-b1a0-49f0-bde5-23889193b3e4" >
-		<http:request method="GET" doc:name="Request to fetch all recentmodified contacts" doc:id="5060933f-0688-4730-8fe6-8ae209c7fece" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/company/recentmodified" responseTimeout="#[p('hubspot-sapi.responseTimeout')]" target="recentmodifiedCompanies" >
+	<sub-flow name="aggregate-company-ids-subflow" doc:id="11e107db-b1a0-49f0-bde5-23889193b3e4" >
+		<http:request method="GET" doc:name="Request to fetch all recentmodified companies" doc:id="5060933f-0688-4730-8fe6-8ae209c7fece" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/company/recentmodified" responseTimeout="#[p('hubspot-sapi.responseTimeout')]" target="recentmodifiedCompanies" sendCorrelationId="ALWAYS">
 			<http:query-params ><![CDATA[#[output application/java
 ---
 {
+	"offset" : vars.offset,
 	"count" : p('url.recentmodifiedcount') as String
 }]]]></http:query-params>
 		</http:request>
-		<ee:transform doc:name="Transform Message" doc:id="1ef4d0d6-9e5e-410c-a92b-ec6624cda477" >
+		<ee:transform doc:name="Aggregate Company Ids" doc:id="1ef4d0d6-9e5e-410c-a92b-ec6624cda477" >
 			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
----
-payload default [] ++ ((vars.recentmodifiedCompanies.results filter ((item, index) -> item.properties.hs_lastmodifieddate.value as Number > vars.minTime as Number)).companyId default [])]]></ee:set-payload>
+				<ee:set-payload resource="dwl/company/update/msg-aggregated-companies.dwl" />
 			</ee:message>
 			<ee:variables >
-				<ee:set-variable variableName="recentmodifiedTime" ><![CDATA[%dw 2.0
-output application/json
----
-max([max(vars.recentmodifiedContacts.contacts.addedAt), vars.recentmodifiedTime default 0]) default ""]]></ee:set-variable>
-				<ee:set-variable variableName="recentmodifiedIds" ><![CDATA[%dw 2.0
-output application/json
----
-(vars.recentmodifiedContacts.contacts filter ((item, index) -> item.addedAt as Number > vars.minTime as Number)).vid]]></ee:set-variable>
+				<ee:set-variable resource="dwl/company/update/var-recentmodified-time.dwl" variableName="recentmodifiedTime" />
+				<ee:set-variable resource="dwl/company/update/var-recentmodified-ids.dwl" variableName="recentmodifiedIds" />
+				<ee:set-variable resource="dwl/company/update/var-offset.dwl" variableName="offset" />
 			</ee:variables>
 		</ee:transform>
-		<choice doc:name="Choice" doc:id="988accae-b8df-4ad0-ad33-f477fab9eae1" >
+		<choice doc:name="Count(recentmodifiedIds) = count" doc:id="988accae-b8df-4ad0-ad33-f477fab9eae1" >
 			<when expression="#[sizeOf(vars.recentmodifiedIds) != p('url.recentmodifiedcount') as Number]" >
-				<flow-ref doc:name="Flow Ref to contact-leadFlow" doc:id="a9cd948b-f57c-426c-8ef9-4557cdba770a" name="updated-company-syncSub_Flow" />
-				<os:store doc:name="Store minTime" doc:id="29389e49-e423-492b-b647-0633663f82b4" key="minTime-company" objectStore="Object_store" >
+				<flow-ref doc:name="Flow Ref to contact-leadFlow" doc:id="a9cd948b-f57c-426c-8ef9-4557cdba770a" name="updated-company-checks" />
+				<os:store doc:name="Store minTimeCompany" doc:id="29389e49-e423-492b-b647-0633663f82b4" key="minTimeCompany" objectStore="Object_store" >
 					<os:value ><![CDATA[#[vars.recentmodifiedTime]]]></os:value>
 				</os:store>
+				<logger level="INFO" doc:name="Log Completed" doc:id="a46146c8-7ade-458d-ad9c-2b4dfb598b2f" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  env : Mule::p('env'),&#10;  transactionId : correlationId,&#10;  applicationName : Mule::p('app.name'),&#10;  flowName : &quot;Hubspot company to Salesforce Account Updation flow&quot;,&#10;  status: &quot;Completed&quot;,&#10;  timestamp : now()&#10;}]" />
 			</when>
 			<otherwise >
-				<flow-ref doc:name="Flow Ref to contact-leadSub_Flow" doc:id="78913d73-081b-4735-b12b-fa64556f737f" name="contact-leadSub_Flow" />
+				<flow-ref doc:name="Flow Ref to contact-leadSub_Flow" doc:id="78913d73-081b-4735-b12b-fa64556f737f" name="aggregate-company-ids-subflow" />
+			</otherwise>
+		</choice>
+	</sub-flow>
+	<sub-flow name="updated-company-checks" doc:id="72817fdd-47fa-4e82-8678-0ecbedc413f7" >
+		<ee:transform doc:name="Set Inbound Payload" doc:id="4d889681-ddef-415b-920b-55f66366b233" >
+			<ee:message >
+				<ee:set-payload resource="dwl/company/update/msg-inbound-payload-update-company-check.dwl" />
+			</ee:message>
+		</ee:transform>
+		<http:request method="POST" doc:name="get aggregated companies by companyId" doc:id="8cd61d8f-e7fd-445a-b741-26385be23c5e" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/company/aggregated" responseTimeout="600000" targetValue="#[payload default []]" sendCorrelationId="ALWAYS"/>
+		<ee:transform doc:name="Set Response Payload" doc:id="a94a7060-3169-4905-91bc-23d5f0767944" >
+			<ee:message >
+				<ee:set-payload resource="dwl/company/update/msg-aggregated-company-update-company-check.dwl" />
+			</ee:message>
+		</ee:transform>
+		<parallel-foreach doc:name="Parallel For Each" doc:id="b07a8e91-ff94-4b3e-a5c8-b283d41acdf5" maxConcurrency="${parallelForEach.company.maxConcurrency}" >
+			<choice doc:name="Is sfdc_account_id == Null ?" doc:id="c0bf4696-2c4d-4981-a3d1-16861377c670" >
+				<when expression="#[!isEmpty(payload.properties.sfdc_account_id.value)]" >
+					<logger level="INFO" doc:name="Update HS Company in SF" doc:id="a9c7de1a-7015-45e9-aab1-a7c2d998f8e2" message="Update Hubspot Company in Salesforce" />
+					<flow-ref doc:name="Flow Reference to updated-company-in-salesforce" doc:id="c2ed6da0-4237-4268-9a07-a31c9680d43c" name="updated-company-in-salesforce"/>
+				</when>
+				<otherwise >
+					<logger level="INFO" doc:name="Account is not yet created in SF" doc:id="a4a97a17-0931-4467-bde4-dd46e176fdc0" message="#[&quot;Account with companyId '&quot; ++ payload.companyId as String ++ &quot;' is not yet created in Salesforce.&quot;]"/>
+					<set-payload value="#[{&#10;	&quot;message&quot;: &quot;Account with companyId '&quot; ++ payload.companyId as String ++ &quot;' is not yet created in Salesforce.&quot;&#10;}]" doc:name="Set Response Payload" doc:id="38645da1-49a8-4a69-b3ba-885c53ad974b" />
+				</otherwise>
+			</choice>
+		</parallel-foreach>
+		<ee:transform doc:name="Final Response" doc:id="596270f1-84cd-462c-84a6-e043cf66dba2" >
+			<ee:message >
+				<ee:set-payload resource="dwl/company/update/msg-final-response.dwl" />
+			</ee:message>
+		</ee:transform>
+		<logger level="DEBUG" doc:name="Log Final Response" doc:id="2a3b5698-8721-4086-91ab-d7c687e0958e" message="#[payload]" />
+	</sub-flow>
+	<sub-flow name="updated-company-in-salesforce" doc:id="8cabc702-eae3-4874-8a2b-4484dde7247a" >
+		<ee:transform doc:name="Set ownerId" doc:id="1cbd9901-a0aa-4ece-9387-2a3030c44b26" >
+			<ee:message />
+			<ee:variables >
+				<ee:set-variable resource="dwl/company/update/var-companyid.dwl" variableName="companyId" />
+				<ee:set-variable resource="dwl/company/update/var-hubspot-owner-id.dwl" variableName="ownerId" />
+			</ee:variables>
+		</ee:transform>
+		<choice doc:name="is ownerId = Null ?" doc:id="50c14784-8f6c-4514-9a48-343904bd9a64">
+			<when expression="#[!isEmpty(vars.ownerId)]">
+				<set-variable value="#[vars.ownerId]" doc:name="ownerId" doc:id="d80c211a-3b53-4cd0-ab51-dcc945a7fef6" variableName="ownerId" />
+				<flow-ref doc:name="Flow Ref to get-salesforce-ownerId-flow" doc:id="23985af6-9dd9-47a2-a308-6bb883569211" name="get-salesforce-ownerId-flow" target="ownerId" />
+			</when>
+			<otherwise>
+				<logger level="INFO" doc:name="ownerId is null" doc:id="77f92a54-c9aa-4b3e-9b0b-30122cf5e443" message='#["ownerId is null"]' />
+			</otherwise>
+		</choice>
+		<ee:transform doc:name="Mapping" doc:id="fdf08bcb-2b50-4308-a7d5-e41ed342f599">
+			<ee:message>
+				<ee:set-payload resource="dwl/company/update/msg-mapping.dwl" />
+			</ee:message>
+			<ee:variables />
+		</ee:transform>
+		<http:request method="POST" doc:name="Request SF to update account" doc:id="61d8656c-112a-4554-943d-78bb18990791" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/account/update" sendCorrelationId="ALWAYS" responseTimeout="#[p('salesforce-sapi.responseTimeout')]">
+		</http:request>
+		<choice doc:name="If Successful ?" doc:id="99379f9b-307c-4921-8224-5ad04efda55e" >
+			<when expression="#[payload.successful]" >
+				<ee:transform doc:name="Successful Response" doc:id="724dced3-ec7c-4766-af93-c4829b7946d3" >
+					<ee:message >
+						<ee:set-payload resource="dwl/company/update/msg-successful-response.dwl" />
+					</ee:message>
+					<ee:variables />
+				</ee:transform>
+				<logger level="INFO" doc:name="Log Account Updated" doc:id="e61ff77e-e0c5-4aed-bd83-9a1f3d091782" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  "Hubspot_Company_ID__c": vars.companyId,&#10;  "Account Id": payload.sfdc_account_id,&#10;  "Message": "Company Updated in Salesforce"&#10;}]' />
+				<flow-ref doc:name="Flow Ref to salesforce-Ids-sync-backFlow" doc:id="4417b78e-7b42-4939-83bb-450722728d6a" name="company-to-account-sync-back" target="syncBackResponse"/>
+			</when>
+			<otherwise >
+				<ee:transform doc:name="Failed Response" doc:id="977026ab-ee2c-48aa-bf81-476e90a03811" >
+					<ee:message >
+						<ee:set-payload resource="dwl/company/update/msg-failed-message.dwl" />
+					</ee:message>
+				</ee:transform>
+				<logger level="ERROR" doc:name="Log error message" doc:id="9b7e9d89-1c99-4c49-8334-87aad465db13" message="#[payload]"/>
 			</otherwise>
 		</choice>
 	</sub-flow>
