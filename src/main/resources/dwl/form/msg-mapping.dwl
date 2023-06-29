@@ -1,16 +1,30 @@
 %dw 2.0
 output application/json skipNullOn="everywhere"
 ---
-vars.formSubmittedContact map ((item, index) -> 
-{
-	
-	Subject : item."form-submissions".title[0] ,
+//vars.formSubmittedContact map ((item, index) -> 
+//{
+//	
+//	Subject : item."form-submissions".title[0] ,
+//	Type : p('form.Type'),
+//	ActivityDate : (item."form-submissions".timestamp[0] as Number as DateTime {unit : "milliseconds"}) as Date ,
+//	RecordTypeId : p('form.RecordTypeId') ,      //"01276000000CrWY",
+//	OwnerId : p('form.AssignedTo'),
+//	Status : p('form.Status'),
+//	WhatId : if( item.properties.sfdc_contact_id.value != null) item.properties.sfdc_account_id.value else null ,
+//	WhoId : if( item.properties.sfdc_contact_id.value != null) item.properties.sfdc_contact_id.value else item.properties.sfdc_lead_id.value
+//	
+//	})
+[
+	{
+	Subject : vars.form.title ,
 	Type : p('form.Type'),
-	ActivityDate : (item."form-submissions".timestamp[0] as Number as DateTime {unit : "milliseconds"}) as Date ,
+	ActivityDate : (vars.form.timestamp as Number as DateTime {unit : "milliseconds"}) as Date ,
 	RecordTypeId : p('form.RecordTypeId') ,      //"01276000000CrWY",
 	OwnerId : p('form.AssignedTo'),
 	Status : p('form.Status'),
-	WhatId : if( item.properties.sfdc_contact_id.value != null) item.properties.sfdc_account_id.value else null ,
-	WhoId : if( item.properties.sfdc_contact_id.value != null) item.properties.sfdc_contact_id.value else item.properties.sfdc_lead_id.value
+	Description : vars.message,
+	WhatId : if( payload.properties.sfdc_contact_id.value != null) payload.properties.sfdc_account_id.value else null ,
+	WhoId : if( payload.properties.sfdc_contact_id.value != null) payload.properties.sfdc_contact_id.value else payload.properties.sfdc_lead_id.value
 	
-	})
+	}
+]

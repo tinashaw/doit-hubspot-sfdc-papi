@@ -9,7 +9,7 @@ http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/htt
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd">
 	<flow name="form-task-flow" doc:id="2226da81-0893-4f3d-9286-f3259d759608" >
-		<http:request method="POST" doc:name="get aggregated contacts by vid" doc:id="a9853634-8bbd-4615-925a-61347baf15aa" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/contact/aggregated" responseTimeout="600000" targetValue="#[payload default []]" sendCorrelationId="ALWAYS"/>
+		<http:request method="POST" doc:name="get aggregated contacts by vid" doc:id="a9853634-8bbd-4615-925a-61347baf15aa" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/contact/aggregated" responseTimeout="#[p('hubspot-sapi.responseTimeout')]" targetValue="#[payload default []]" sendCorrelationId="ALWAYS"/>
 		<ee:transform doc:name="Filter formSubmittedContact" doc:id="b091e7ac-7006-4d5f-94cd-8d40ac642810">
 			<ee:message>
 			</ee:message>
@@ -32,21 +32,42 @@ payload filter ((item, index) -> sizeOf(item."form-submissions") > 0 ) default [
 </flow>
 	<sub-flow name="form-task-sub-flow" doc:id="fc7b89fb-3461-4235-9ec8-0970fc0ebc5a" >
 		<logger level="INFO" doc:name="Log Started" doc:id="1875894b-63eb-4802-a351-054b28e1833b" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  env : Mule::p('env'),&#10;  transactionId : correlationId,&#10;  applicationName : Mule::p('app.name'),&#10;  flowName : &quot;form-task-flow&quot;,&#10;  status: &quot;Started&quot;,&#10;  timestamp : now()&#10;}]" />
-		<ee:transform doc:name="Mapping" doc:id="99b6137b-6400-47f6-8d64-8153a25f6995">
+		
+		<parallel-foreach doc:name="Parallel For Each Form Submitted Contact" doc:id="ed8c305c-0fe8-42c3-b1e3-5d04130081cd" collection="#[vars.formSubmittedContact]">
+					<ee:transform doc:name="Set form details" doc:id="0edce734-67d5-4978-8034-412f8811c85d" >
+				<ee:message >
+				</ee:message>
+				<ee:variables >
+					<ee:set-variable resource="dwl/form/var-form-details.dwl" variableName="form" />
+				</ee:variables>
+			</ee:transform>
+			<http:request method="GET" doc:name="Request to get form submissions" doc:id="dfe38e51-45c1-414b-b9fd-e73898bfedb8" sendCorrelationId="ALWAYS" target="formSubmissions" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/form/submissions/{formId}" responseTimeout="#[p('hubspot-sapi.responseTimeout')]">
+				<http:headers ><![CDATA[#[output application/java
+---
+{
+	Authorization : "Bearer pat-na1-9b2d3e73-5a06-41a7-acf9-28afb4e45d8d"
+}]]]></http:headers>
+				<http:uri-params ><![CDATA[#[output application/java
+---
+{
+	formId : vars.form.id
+}]]]></http:uri-params>
+			</http:request>
+			<ee:transform doc:name="Set message" doc:id="77bcbf6f-8056-47fe-9dd8-13736d76daf1" >
+				<ee:message >
+				</ee:message>
+				<ee:variables >
+					<ee:set-variable resource="dwl/form/var-set-message-field.dwl" variableName="message" />
+				</ee:variables>
+			</ee:transform>
+			<ee:transform doc:name="Mapping" doc:id="99b6137b-6400-47f6-8d64-8153a25f6995">
 			<ee:message>
 				<ee:set-payload resource="dwl/form/msg-mapping.dwl" />
 			</ee:message>
 		</ee:transform>
-		
-		<parallel-foreach doc:name="Parallel For Each" doc:id="ed8c305c-0fe8-42c3-b1e3-5d04130081cd" >
-					<ee:transform doc:name="Set Payload as Array" doc:id="f0480e62-55a7-40a8-b80f-ed928796a5a6" >
-						<ee:message >
-					<ee:set-payload resource="dwl/form/msg-payload-in array.dwl" />
-						</ee:message>
-					</ee:transform>
 					<choice doc:name="Is WhoId null ?" doc:id="8dce801c-505d-40b4-8a8b-6e2d33c2c47e" >
 						<when expression="#[payload.WhoId != null]">
-							<http:request method="GET" doc:name="Lookup for same Existing Task" doc:id="31dd808a-62bd-458c-a43b-2ab9eae48601" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/genericquery" target="sfTask" sendCorrelationId="ALWAYS">
+							<http:request method="GET" doc:name="Lookup for same Existing Task" doc:id="31dd808a-62bd-458c-a43b-2ab9eae48601" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/genericquery" target="sfTask" sendCorrelationId="ALWAYS" responseTimeout="#[p('salesforce-sapi.responseTimeout')]">
 						<http:query-params><![CDATA[#[output application/java
 ---
 {
@@ -56,10 +77,10 @@ payload filter ((item, index) -> sizeOf(item."form-submissions") > 0 ) default [
 					</http:request>
 							<choice doc:name="Is same task Exist ?" doc:id="2ded92ed-3872-45f9-b690-884d930188e3">
 						<when expression="#[sizeOf(vars.sfTask) &lt; 1]">
-							<http:request method="POST" doc:name="Request to create task" doc:id="dbf054bb-fa89-41d7-8aaa-3c10707a0745" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/task/create" sendCorrelationId="ALWAYS" responseTimeout="-1" />
+							<http:request method="POST" doc:name="Request to create task" doc:id="dbf054bb-fa89-41d7-8aaa-3c10707a0745" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/task/create" sendCorrelationId="ALWAYS" responseTimeout="#[p('salesforce-sapi.responseTimeout')]" />
 							<choice doc:name="Is Success ?" doc:id="e56fa372-653d-43b0-9bf1-41238c56d81c" >
 								<when expression="#[payload.successful == true]">
-									<logger level="INFO" doc:name="Info Log" doc:id="0777b142-9c77-4dc6-939f-bf2696540931" message='#[%dw 2.0&#10;output application/json&#10;---&#10;"Created Task Id" : payload.items.payload.id]' />
+									<logger level="INFO" doc:name="Info Log" doc:id="0777b142-9c77-4dc6-939f-bf2696540931" message='#[%dw 2.0&#10;output application/json&#10;---&#10;"Created Task Id" : payload.items.payload.id[0]]' />
 								</when>
 								<otherwise >
 									<logger level="INFO" doc:name="Info Log" doc:id="34e39ce1-581f-4520-b5ba-016892847f37" message='#[%dw 2.0&#10;output application/json&#10;---&#10;"Error Task Not Created" : payload.items.message]'/>
@@ -67,7 +88,7 @@ payload filter ((item, index) -> sizeOf(item."form-submissions") > 0 ) default [
 							</choice>
 						</when>
 						<otherwise>
-							<logger level="INFO" doc:name="Info Log" doc:id="9f37c05b-f1ea-4609-9ab0-798afd86b740" message="Task is Already with Id #[vars.sfTask.Id] present for #[payload]" />
+							<logger level="INFO" doc:name="Info Log" doc:id="9f37c05b-f1ea-4609-9ab0-798afd86b740" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  "Message" : "Task is Already Present on Salesforce",&#10;  "Task Id" : vars.sfTask.Id ,&#10;  "Subject" : payload.Subject[0],&#10;  "WhoId" : payload.WhoId[0],&#10;  "Created By" : payload.OwnerId[0]&#10;}]' />
 						</otherwise>
 					</choice>
 						</when>
