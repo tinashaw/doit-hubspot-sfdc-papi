@@ -6,7 +6,7 @@
 http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
-	<flow name="contact-schedular-flow-new" doc:id="876e5b23-a608-4ab5-ba74-3a03da2f556a" initialState="stopped">
+	<flow name="contact-schedular-flow" doc:id="876e5b23-a608-4ab5-ba74-3a03da2f556a" initialState="started">
 		<scheduler doc:name="Scheduler every minute" doc:id="18f065d2-aa5e-48a9-8185-223cd597c3ca" >
 			<scheduling-strategy >
 				<fixed-frequency frequency="${scheduler.frequency}" timeUnit="MINUTES" />
@@ -18,9 +18,9 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 			<os:default-value ><![CDATA[#[p('min-time.contact')]]]></os:default-value>
 		</os:retrieve>
 		<set-variable value='#[""]' doc:name="Set Variable timeOffset" doc:id="dd5e7a03-774d-4989-a728-00766fdb609a" variableName="timeOffset" />
-		<flow-ref doc:name="Flow Ref to contact-lead-subflow-new" doc:id="0d879123-372d-40a3-96dc-520fffd86a8f" name="contact-lead-subflow-new" />
+		<flow-ref doc:name="Flow Ref to aggregate-hubspot-data" doc:id="0d879123-372d-40a3-96dc-520fffd86a8f" name="aggregate-hubspot-data" />
 	</flow>
-	<sub-flow name="contact-lead-subflow-new" doc:id="5dfe54de-0b48-49ff-b694-4f7f7ced6546" >
+	<sub-flow name="aggregate-hubspot-data" doc:id="5dfe54de-0b48-49ff-b694-4f7f7ced6546" >
 		<http:request method="GET" doc:name="Request to fetch all recentmodified contacts" doc:id="a422fa5e-606e-4a87-afa8-d5f748da0de4" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/contact/recentmodified" sendCorrelationId="ALWAYS" responseTimeout="#[p('hubspot-sapi.responseTimeout')]" target="recentmodifiedContacts" >
 			<http:query-params ><![CDATA[#[output application/java
 ---
@@ -53,7 +53,7 @@ vars.recentmodifiedContacts."time-offset"]]></ee:set-variable>
 		</ee:transform>
 		<choice doc:name="Count(recentmodifiedIds) = count" doc:id="fb25e558-7554-437c-859b-a85bbbe4f1f1" >
 			<when expression="#[sizeOf(vars.recentmodifiedIds) != p('url.recentmodifiedcount') as Number]" >
-				<flow-ref doc:name="Flow Ref to contact-lead-flow-new" doc:id="d1e4e04c-cb0a-48e3-a8d5-36cd0084ac99" name="contact-lead-flow-new" target="contactLeadFlowResponse" />
+				<flow-ref doc:name="Flow Ref to iterate-over-each-contact-flow" doc:id="d1e4e04c-cb0a-48e3-a8d5-36cd0084ac99" name="iterate-over-each-contact-flow" target="contactLeadFlowResponse" />
 				<logger level="INFO" doc:name="Log Completed" doc:id="6fdd0263-7d87-4052-b0cb-d8a84eb9b455" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  env : Mule::p('env'),&#10;  transactionId : correlationId,&#10;  applicationName : Mule::p('app.name'),&#10;  flowName : &quot;Hubspot contact to Salesforce contact/lead flow&quot;,&#10;  status: &quot;Completed&quot;,&#10;  timestamp : now()&#10;}]" />
 <!-- [STUDIO:"Scatter-Gather - vids"]				<scatter-gather doc:name="Scatter-Gather - vids" doc:id="cb0abdc4-3414-4503-bcdb-92c1c33c4dbc" >
 					<route >
@@ -82,17 +82,18 @@ vars.recentmodifiedContacts."time-offset"]]></ee:set-variable>
 				</os:store>
 			</when>
 			<otherwise >
-				<flow-ref doc:name="Flow Ref to contact-lead-subflow-new" doc:id="f17d1ebb-c574-4adb-9bb2-060360d3c887" name="contact-lead-subflow-new" />
+				<flow-ref doc:name="Flow Ref to aggregate-hubspot-data" doc:id="f17d1ebb-c574-4adb-9bb2-060360d3c887" name="aggregate-hubspot-data" />
 			</otherwise>
 		</choice>
 	</sub-flow>
-	<flow name="contact-lead-flow-new" doc:id="37744fe1-608b-4d89-8125-1ddaa7cc27d9" >
+	<flow name="iterate-over-each-contact-flow" doc:id="37744fe1-608b-4d89-8125-1ddaa7cc27d9" >
 		<ee:transform doc:name="Inbound Payload" doc:id="42b59077-feb0-4b0d-b091-b7f97daa8955" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
 ---
-payload default []]]></ee:set-payload>
+payload default []
+]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
 		<http:request method="POST" doc:name="get aggregated contacts by vid" doc:id="e2c43b0d-273b-452b-be07-950eab2beb0b" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/contact/aggregated" sendCorrelationId="ALWAYS" responseTimeout="600000" targetValue="#[payload default []]" />
@@ -101,8 +102,8 @@ payload default []]]></ee:set-payload>
 				<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
 ---
-//payload default []
-(payload -- (payload filter ((item, index) -> (((item.properties.lastmodifieddate.value default 0) as Number - (item.properties.ms_last_run.versions.timestamp[0] default 0)) < 3000) ))) default []]]></ee:set-payload>
+payload default []
+//(payload -- (payload filter ((item, index) -> (((item.properties.lastmodifieddate.value default 0) as Number - (item.properties.ms_last_run.versions.timestamp[0] default 0)) < 3000) ))) default []]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
 		<parallel-foreach doc:name="Parallel For Each contact" doc:id="8a8cb150-b056-4c3a-8dd1-683e1ff71ce4" maxConcurrency="${parallelForEach.contact-lead.maxConcurrency}" >
@@ -124,8 +125,11 @@ output application/json
 			</ee:transform>
 			<choice doc:name="Choice" doc:id="2d7800cf-082a-40cc-b8f2-a5afcf3c4487" >
 				<when expression="#[!isEmpty(vars.id.associatedcompanyid)]">
-					<flow-ref doc:name="Flow Reference" doc:id="f69c937a-9cc6-48a9-a096-45d4f7a991bd" name="contact-lead-newSub_Flow" />
+					<flow-ref doc:name="Flow Ref to check-for-contact-lead-in-salesforce" doc:id="f69c937a-9cc6-48a9-a096-45d4f7a991bd" name="check-for-contact-lead-in-salesforce" />
 				</when>
+				<otherwise >
+					<logger level="INFO" doc:name="Log No Associated Company found" doc:id="1e09e0d3-077d-4846-919d-e22fd5418535" message='#["No Associated Company found"]'/>
+				</otherwise>
 			</choice>
 		</parallel-foreach>
 		<ee:transform doc:name="Final Response" doc:id="c450642e-18e8-447e-a24e-44acd05db5f0" >
@@ -138,7 +142,7 @@ payload..payload]]></ee:set-payload>
 		</ee:transform>
 		<logger level="DEBUG" doc:name="Log Final Response" doc:id="a9fbc21d-d25a-4a91-846e-4ebc5fbd987d" message="#[payload]" />
 	</flow>
-	<sub-flow name="contact-lead-newSub_Flow" doc:id="26c87223-ee88-44ad-9273-6c916c37a288" >
+	<sub-flow name="check-for-contact-lead-in-salesforce" doc:id="26c87223-ee88-44ad-9273-6c916c37a288" >
 		<ee:transform doc:name="Set querytobeexecuted" doc:id="b0921e4a-798b-4540-83aa-f7b4ec907837" >
 			<ee:message />
 			<ee:variables >
@@ -179,7 +183,7 @@ output application/json
 						<set-variable value="#[vars.contactIdbyEmail.Id[0]]" doc:name="contactId" doc:id="7105fcca-4348-4f58-92d2-4b607a395fbd" variableName="contactId" />
 					</when>
 					<otherwise>
-						<flow-ref doc:name="Flow Reference" doc:id="fd80f8bb-c5c8-481d-a9a4-67a56e56b981" name="choose-a-contact-from-more-than-one-sf-contacts-new"/>
+						<flow-ref doc:name="Flow Ref to choose-a-contact-from-more-than-one-sf-contacts" doc:id="fd80f8bb-c5c8-481d-a9a4-67a56e56b981" name="choose-a-contact-from-more-than-one-sf-contacts"/>
 					</otherwise>
 				</choice>
 				<http:request method="GET" doc:name="Request HS to get Company Details" doc:id="b2ae6e41-dc20-4541-a8f4-e1d412435725" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/company/{companyid}" sendCorrelationId="ALWAYS" target="companyDetails" >
@@ -190,7 +194,7 @@ output application/json
 }]]]></http:uri-params>
 				</http:request>
 				<set-variable value="#[vars.companyDetails.properties.domain.value]" doc:name="domain" doc:id="99b79ad0-297e-48b4-9625-1db9add62e22" variableName="domain"/>
-				<flow-ref doc:name="Flow Reference" doc:id="2103bca5-b3bc-43c3-8ec5-b29c009a67f0" name="contact-newSub_Flow1" />
+				<flow-ref doc:name="Flow Ref to update-contact" doc:id="2103bca5-b3bc-43c3-8ec5-b29c009a67f0" name="update-contact" />
 			</when>
 			<when expression="#[!isEmpty(vars.leadIdbyEmail)]">
 				<logger level="INFO" doc:name="Log Update lead" doc:id="67903d70-4da3-44e2-95a8-cd1667da583c" message='#["Update lead with vid: " ++ vars.id.vid as String]'/>
@@ -199,74 +203,18 @@ output application/json
 						<set-variable value="#[vars.leadIdbyEmail.Id[0]]" doc:name="leadId" doc:id="c265f26d-396f-48e6-b6d5-955f20970110" variableName="leadId" />
 					</when>
 					<otherwise>
-						<flow-ref doc:name="Flow Reference" doc:id="bba977ea-c8e6-4e70-86ab-15bf3d8e2a0f" name="choose-a-lead-from-more-than-one-sf-leads"/>
+						<flow-ref doc:name="Flow Ref choose-a-lead-from-more-than-one-sf-leads" doc:id="bba977ea-c8e6-4e70-86ab-15bf3d8e2a0f" name="choose-a-lead-from-more-than-one-sf-leads"/>
 					</otherwise>
 				</choice>
-				<flow-ref doc:name="Flow Reference" doc:id="faf1a93f-0413-476c-ad97-c3a1ccef04c0" name="lead-newSub_Flow1"/>
+				<flow-ref doc:name="Flow Ref to update-lead" doc:id="faf1a93f-0413-476c-ad97-c3a1ccef04c0" name="update-lead"/>
 			</when>
 			<otherwise >
 				<logger level="INFO" doc:name="Log Contact-Lead checks" doc:id="8885b08d-6b71-4ab1-88bf-34af0d461679" message='#["Contact-Lead checks"]'/>
-				<flow-ref doc:name="Flow Reference" doc:id="961911ff-78bc-4907-b37e-778d48dd0938" name="contact-lead-newSub_Flow1"/>
+				<flow-ref doc:name="Flow Ref to contact-lead-checks" doc:id="961911ff-78bc-4907-b37e-778d48dd0938" name="contact-lead-checks"/>
 			</otherwise>
 		</choice>
 	</sub-flow>
-	<sub-flow name="choose-a-contact-from-more-than-one-sf-contacts-new" doc:id="529c0e5d-a92f-440f-826e-b6af5074d81d" >
-		<ee:transform doc:name="Set querytobeexecuted" doc:id="c2cfeffb-ac4e-472d-a526-e7c2a5c7b51d" >
-			<ee:message />
-			<ee:variables >
-				<ee:set-variable variableName="querytobeexecuted" ><![CDATA[%dw 2.0
-output application/json
----
-"Select Id, Lifecycle_Stage__c, LastModifiedDate from Contact where Id IN ('" ++ (vars.contactIdbyEmail.Id joinBy  ("','") ) ++  "')"]]></ee:set-variable>
-			</ee:variables>
-		</ee:transform>
-		<http:request method="GET" doc:name="Get SF contact details" doc:id="ba8db846-6c0b-4645-a793-3e20fa4fcda4" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/genericquery" sendCorrelationId="ALWAYS" responseTimeout="#[p('salesforce-sapi.responseTimeout')]" target="contactId" >
-			<http:query-params ><![CDATA[#[output application/java
----
-{
-	"querytobeexecuted" : vars.querytobeexecuted
-}]]]></http:query-params>
-		</http:request>
-		<ee:transform doc:name="Set contactId" doc:id="4cdb3e64-c7cb-4fbb-8553-def590d53f48" >
-			<ee:message />
-			<ee:variables >
-				<ee:set-variable variableName="contactId" ><![CDATA[%dw 2.0
-output application/json
----
-if(isEmpty(vars.contactId filter ($.Lifecycle_Stage__c ~= "Customer"))) (vars.contactId orderBy($.LastModifiedDate))[-1].Id else ((vars.contactId filter ($.Lifecycle_Stage__c ~= "Customer")) orderBy($.LastModifiedDate))[-1].Id]]></ee:set-variable>
-			</ee:variables>
-		</ee:transform>
-		<logger level="INFO" doc:name="Log contactId" doc:id="df2fa24f-cc79-44ec-8265-45a25a7622fe" message="#[vars.contactId]" />
-	</sub-flow>
-	<sub-flow name="choose-a-lead-from-more-than-one-sf-leads" doc:id="e43c8817-4c65-4ac2-914b-73f0dcad0503" >
-		<ee:transform doc:name="Set querytobeexecuted" doc:id="af4c3503-3415-43d5-8e60-6d46a855f455" >
-			<ee:message />
-			<ee:variables >
-				<ee:set-variable variableName="querytobeexecuted" ><![CDATA[%dw 2.0
-output application/json
----
-"Select Id, Lifecycle_Stage__c, LastModifiedDate from Lead where Id IN ('" ++ (vars.leadIdbyEmail.Id joinBy  ("','") ) ++  "')"]]></ee:set-variable>
-			</ee:variables>
-		</ee:transform>
-		<http:request method="GET" doc:name="Get SF lead details" doc:id="8bc3210c-70a0-45cd-91f5-9babd8da7720" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/genericquery" sendCorrelationId="ALWAYS" responseTimeout="#[p('salesforce-sapi.responseTimeout')]" target="leadId" >
-			<http:query-params ><![CDATA[#[output application/java
----
-{
-	"querytobeexecuted" : vars.querytobeexecuted
-}]]]></http:query-params>
-		</http:request>
-		<ee:transform doc:name="Set leadId" doc:id="58eecd0a-a643-478f-8dc0-fe12e85d9812" >
-			<ee:message />
-			<ee:variables >
-				<ee:set-variable variableName="leadId" ><![CDATA[%dw 2.0
-output application/json
----
-if(isEmpty(vars.leadId filter ($.Lifecycle_Stage__c ~= "Customer"))) (vars.leadId orderBy($.LastModifiedDate))[-1].Id else ((vars.leadId filter ($.Lifecycle_Stage__c ~= "Customer")) orderBy($.LastModifiedDate))[-1].Id]]></ee:set-variable>
-			</ee:variables>
-		</ee:transform>
-		<logger level="INFO" doc:name="Log leadId" doc:id="8e4cf914-96db-4113-bc97-ff800b605d1c" message="#[vars.leadId]" />
-	</sub-flow>
-	<sub-flow name="contact-lead-newSub_Flow1" doc:id="fb9040e2-5cd8-4722-99c1-8f0a8573e358" >
+	<sub-flow name="contact-lead-checks" doc:id="fb9040e2-5cd8-4722-99c1-8f0a8573e358" >
 		<http:request method="GET" doc:name="Request HS to get Company Details" doc:id="a249bd9c-d4e4-4d76-afe8-49c17d716517" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/company/{companyid}" sendCorrelationId="ALWAYS" target="companyDetails">
 			<http:uri-params><![CDATA[#[output application/java
 ---
@@ -289,7 +237,7 @@ vars.companyDetails.properties.domain.value]]></ee:set-variable>
 		</ee:transform>
 		<choice doc:name="lifecyclestage == 'customer'" doc:id="e2a30c73-f83a-4586-bb05-b6cba4f5229f" >
 			<when expression="#[(vars.lifecyclestage == 'customer')]" >
-				<flow-ref doc:name="Flow Ref to create contact in sfdc " doc:id="ff6d2797-9d8b-4cf5-86d6-39466f80dff4" name="contact-newSub_Flow" />
+				<flow-ref doc:name="Flow Ref to create contact in sfdc " doc:id="ff6d2797-9d8b-4cf5-86d6-39466f80dff4" name="create-contact" />
 			</when>
 			<otherwise >
 				<ee:transform doc:name="SFDCtype" doc:id="9cfa2fec-1e45-46d5-a9a1-dd0669e1bc74" >
@@ -303,7 +251,7 @@ vars.companyDetails.properties.'type'.value]]></ee:set-variable>
 				</ee:transform>
 				<choice doc:name="SFDCtype == 'Customer' or 'Former Customer'" doc:id="9c10617e-6268-44ee-b427-628386710640" >
 					<when expression="#[vars.SFDCtype == 'Customer' or vars.SFDCtype == 'Former Customer']" >
-						<flow-ref doc:name="Flow Ref to create contact in sfdc " doc:id="17696efd-dccb-42f3-a868-9c2e89f24ca5" name="contact-newSub_Flow" />
+						<flow-ref doc:name="Flow Ref to create contact in sfdc " doc:id="17696efd-dccb-42f3-a868-9c2e89f24ca5" name="create-contact" />
 					</when>
 					<otherwise >
 						<ee:transform doc:name="leadsource" doc:id="74860d7d-d361-46d7-87fc-5adb8654bd59" >
@@ -317,10 +265,10 @@ payload.properties.leadsource.value]]></ee:set-variable>
 						</ee:transform>
 						<choice doc:name="leadsource == 'CMP'" doc:id="2de585ef-3e55-40cf-b847-a13b3a204902" >
 							<when expression="#[vars.leadsource == 'CMP']" >
-								<flow-ref doc:name="Flow Ref to create contact in sfdc" doc:id="eb3c2e76-2689-4def-b1b4-faad569c57b0" name="contact-newSub_Flow" />
+								<flow-ref doc:name="Flow Ref to create contact in sfdc" doc:id="eb3c2e76-2689-4def-b1b4-faad569c57b0" name="create-contact" />
 							</when>
 							<otherwise >
-								<flow-ref doc:name="Flow Ref to create lead in sfdc " doc:id="51d7e43e-459a-4867-be90-fe93fd9754f2" name="lead-newSub_Flow" />
+								<flow-ref doc:name="Flow Ref to create lead in sfdc " doc:id="51d7e43e-459a-4867-be90-fe93fd9754f2" name="create-lead" />
 							</otherwise>
 						</choice>
 					</otherwise>
@@ -328,7 +276,7 @@ payload.properties.leadsource.value]]></ee:set-variable>
 			</otherwise>
 		</choice>
 	</sub-flow>
-	<sub-flow name="capture-sf-accountidFlow-new" doc:id="455e766d-27df-412c-a5ae-186e5386e2ce" >
+	<sub-flow name="capture-sf-accountid" doc:id="455e766d-27df-412c-a5ae-186e5386e2ce" >
 		<ee:transform doc:name="Set querytobeexecuted" doc:id="433f5790-fc25-48b4-adc9-1e327f3ff27f" >
 			<ee:message />
 			<ee:variables >
@@ -348,7 +296,7 @@ output application/json
 		<choice doc:name="accountId" doc:id="02b7f478-7278-487a-8268-7a734c34eb76" >
 			<when expression="#[sizeOf(vars.accountId) == 0]" >
 				<logger level="INFO" doc:name="Create Account" doc:id="eeeb1c77-4810-4bcc-8327-c028efdb1ed4" message='#["Create Account"]' />
-				<flow-ref doc:name="Flow Ref to Create Account in Salesforce " doc:id="64c1b6db-71a4-4071-9b63-2cbabcdb70bd" name="create-account-contact-leadFlow-new" target="accountId" />
+				<flow-ref doc:name="Flow Ref to Create Account in Salesforce " doc:id="64c1b6db-71a4-4071-9b63-2cbabcdb70bd" name="create-account-contact-lead" target="accountId" />
 				<set-variable value="#[vars.accountId.sfdc_account_id]" doc:name="accountId" doc:id="b93e3e4e-f904-4ed2-a578-3bc9e46971dd" variableName="accountId" />
 			</when>
 			<when expression="#[sizeOf(vars.accountId) == 1]" >
@@ -384,7 +332,7 @@ if(isEmpty(vars.accountId filter ($.Lifecycle_Stage__c ~= "Customer"))) (vars.ac
 			</otherwise>
 		</choice>
 	</sub-flow>
-	<sub-flow name="create-account-contact-leadFlow-new" doc:id="fe18d61d-9222-4f5e-a6c0-4ba9c0b7a38e" >
+	<sub-flow name="create-account-contact-lead" doc:id="fe18d61d-9222-4f5e-a6c0-4ba9c0b7a38e" >
 		<ee:transform doc:name="Set CompanyId" doc:id="4d478b94-56eb-480b-ab70-0f71f9418151" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0

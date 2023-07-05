@@ -5,8 +5,8 @@
 	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
-	<sub-flow name="contact-newSub_Flow" doc:id="b0ffdaa5-8731-4c72-9de5-2672a583d532" >
-		<flow-ref doc:name="Flow Reference" doc:id="043283f1-4fe8-4f58-943e-79856039ed85" name="capture-sf-accountidFlow-new"/>
+	<sub-flow name="create-contact" doc:id="b0ffdaa5-8731-4c72-9de5-2672a583d532" >
+		<flow-ref doc:name="Flow Ref to capture-sf-accountid" doc:id="043283f1-4fe8-4f58-943e-79856039ed85" name="capture-sf-accountid"/>
 		<choice doc:name="is ownerId = Null ?" doc:id="3a3e8b6c-5bf6-4f30-8317-548baf7df9f9" >
 			<when expression="#[!isEmpty(vars.id.ownerId)]" >
 				<set-variable value="#[vars.id.ownerId]" doc:name="ownerId" doc:id="50afb9e4-2e87-4d83-adfa-e8fc6e013e9b" variableName="ownerId" />
@@ -121,8 +121,8 @@ output application/json
 			</otherwise>
 		</choice>
 	</sub-flow>
-	<sub-flow name="contact-newSub_Flow1" doc:id="afa57fcd-d4ec-4fcf-9c4f-0933d1631065" >
-		<flow-ref doc:name="Flow Reference" doc:id="bfabe06d-654f-4a2f-882a-b0087bc7d207" name="capture-sf-accountidFlow-new" />
+	<sub-flow name="update-contact" doc:id="afa57fcd-d4ec-4fcf-9c4f-0933d1631065" >
+		<flow-ref doc:name="Flow Ref to capture-sf-accountid" doc:id="bfabe06d-654f-4a2f-882a-b0087bc7d207" name="capture-sf-accountid" />
 		<choice doc:name="is ownerId = Null ?" doc:id="3c66b30b-fffe-43cf-8a98-ac7e2cdfce14" >
 			<when expression="#[!isEmpty(vars.id.ownerId)]" >
 				<set-variable value="#[vars.id.ownerId]" doc:name="ownerId" doc:id="b6c60810-9cfb-4c34-a555-ed6d1e759461" variableName="ownerId" />
@@ -230,5 +230,33 @@ output application/json
 				<logger level="ERROR" doc:name="Log error message" doc:id="0a1a3ffd-5c1c-49b7-b84f-4d1d1de1fbf2" message="#[payload]" />
 			</otherwise>
 		</choice>
+	</sub-flow>
+	<sub-flow name="choose-a-contact-from-more-than-one-sf-contacts" doc:id="360fdad1-1742-4416-89cd-838308b2c5b2" >
+		<ee:transform doc:name="Set querytobeexecuted" doc:id="025edc5e-9a80-4b0f-8eac-42305addbbe3" >
+			<ee:message />
+			<ee:variables >
+				<ee:set-variable variableName="querytobeexecuted" ><![CDATA[%dw 2.0
+output application/json
+---
+"Select Id, Lifecycle_Stage__c, LastModifiedDate from Contact where Id IN ('" ++ (vars.contactIdbyEmail.Id joinBy  ("','") ) ++  "')"]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<http:request method="GET" doc:name="Get SF contact details" doc:id="d9b5d202-3821-41d0-8b55-5dcdf8d99bf8" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/genericquery" sendCorrelationId="ALWAYS" responseTimeout="#[p('salesforce-sapi.responseTimeout')]" target="contactId" >
+			<http:query-params ><![CDATA[#[output application/java
+---
+{
+	"querytobeexecuted" : vars.querytobeexecuted
+}]]]></http:query-params>
+		</http:request>
+		<ee:transform doc:name="Set contactId" doc:id="36ff23e8-6980-4d59-bf5e-d58a283ce930" >
+			<ee:message />
+			<ee:variables >
+				<ee:set-variable variableName="contactId" ><![CDATA[%dw 2.0
+output application/json
+---
+if(isEmpty(vars.contactId filter ($.Lifecycle_Stage__c ~= "Customer"))) (vars.contactId orderBy($.LastModifiedDate))[-1].Id else ((vars.contactId filter ($.Lifecycle_Stage__c ~= "Customer")) orderBy($.LastModifiedDate))[-1].Id]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="Log contactId" doc:id="e5abc869-a3d0-401b-ace4-d5d79a7d3401" message="#[vars.contactId]" />
 	</sub-flow>
 </mule>

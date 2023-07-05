@@ -5,7 +5,7 @@
 	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
-	<sub-flow name="lead-newSub_Flow" doc:id="a398465d-b998-4f95-8b24-6be6ed646f81" >
+	<sub-flow name="create-lead" doc:id="a398465d-b998-4f95-8b24-6be6ed646f81" >
 		<choice doc:name="is ownerId = Null ?" doc:id="021af7c4-4431-4cef-bf60-61aae2a73fb7" >
 			<when expression="#[!isEmpty(vars.id.ownerId)]" >
 				<set-variable value="#[vars.id.ownerId]" doc:name="ownerId" doc:id="f5c30522-0d7e-43c0-afc4-e767b19822c7" variableName="ownerId" />
@@ -35,7 +35,6 @@ var picklist = readUrl("classpath://picklist.json", "application/json")
 		("Became_a_Sales_Qualified_Lead_Date__c" : payload.properties.became_a_sales_qualified_lead_date__c.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.became_a_sales_qualified_lead_date__c.value != null),
 		("Became_a_Tele_Accepted_Lead_TAL__c" : payload.properties.became_a_tele_accepted_lead_tal__c.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.became_a_tele_accepted_lead_tal__c.value != null),
 		("Became_an_Other_Lifecycle_Date__c" : payload.properties.became_an_other_lifecycle_date__c.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.became_an_other_lifecycle_date__c.value != null),
-//		("Email_Opt_Out_Date__c" : payload.properties.became_an_unsubscribed_user_date.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.became_an_unsubscribed_user_date.value != null),
 		("Became_Other_Lifecycle_Date__c" : payload.properties.became_other_date.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.became_other_date.value != null),
 		("LeadSource" : picklist.contact.LeadSource[(payload.properties.contact_source.value)])if(payload.properties.contact_source.value != null),
 		("Lead_Source_Detail__c" : picklist.contact.contact_source_detail[(payload.properties.contact_source_detail.value)])if(payload.properties.contact_source_detail.value != null),
@@ -125,7 +124,7 @@ output application/json
 			</otherwise>
 		</choice>
 	</sub-flow>
-	<sub-flow name="lead-newSub_Flow1" doc:id="371c3b3b-c876-418a-90b6-642e825d16b3" >
+	<sub-flow name="update-lead" doc:id="371c3b3b-c876-418a-90b6-642e825d16b3" >
 		<choice doc:name="is ownerId = Null ?" doc:id="997c6613-91a7-4e8f-ab2e-d28ef613fbeb" >
 			<when expression="#[!isEmpty(vars.id.ownerId)]" >
 				<set-variable value="#[vars.id.ownerId]" doc:name="ownerId" doc:id="5cb43cee-2c60-484f-b972-63e505e6a4ab" variableName="ownerId" />
@@ -155,7 +154,6 @@ var picklist = readUrl("classpath://picklist.json", "application/json")
 		("Became_a_Sales_Qualified_Lead_Date__c" : payload.properties.became_a_sales_qualified_lead_date__c.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.became_a_sales_qualified_lead_date__c.value != null),
 		("Became_a_Tele_Accepted_Lead_TAL__c" : payload.properties.became_a_tele_accepted_lead_tal__c.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.became_a_tele_accepted_lead_tal__c.value != null),
 		("Became_an_Other_Lifecycle_Date__c" : payload.properties.became_an_other_lifecycle_date__c.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.became_an_other_lifecycle_date__c.value != null),
-//		("Email_Opt_Out_Date__c" : payload.properties.became_an_unsubscribed_user_date.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.became_an_unsubscribed_user_date.value != null),
 		("Became_Other_Lifecycle_Date__c" : payload.properties.became_other_date.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.became_other_date.value != null),
 		("LeadSource" : picklist.contact.LeadSource[(payload.properties.contact_source.value)])if(payload.properties.contact_source.value != null),
 		("Lead_Source_Detail__c" : picklist.contact.contact_source_detail[(payload.properties.contact_source_detail.value)])if(payload.properties.contact_source_detail.value != null),
@@ -239,5 +237,33 @@ output application/json
 				<logger level="ERROR" doc:name="Log error message" doc:id="9750f407-ab57-451c-b5dc-46839a027bc5" message="#[payload]" />
 			</otherwise>
 		</choice>
+	</sub-flow>
+	<sub-flow name="choose-a-lead-from-more-than-one-sf-leads" doc:id="82968d17-82a0-402e-af1b-798632457d03" >
+		<ee:transform doc:name="Set querytobeexecuted" doc:id="c44f20f0-f425-4927-9550-5e94753e3d0e" >
+			<ee:message />
+			<ee:variables >
+				<ee:set-variable variableName="querytobeexecuted" ><![CDATA[%dw 2.0
+output application/json
+---
+"Select Id, Lifecycle_Stage__c, LastModifiedDate from Lead where Id IN ('" ++ (vars.leadIdbyEmail.Id joinBy  ("','") ) ++  "')"]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<http:request method="GET" doc:name="Get SF lead details" doc:id="83e4b248-8dfb-439e-be6b-809f9dd51861" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/genericquery" sendCorrelationId="ALWAYS" responseTimeout="#[p('salesforce-sapi.responseTimeout')]" target="leadId" >
+			<http:query-params ><![CDATA[#[output application/java
+---
+{
+	"querytobeexecuted" : vars.querytobeexecuted
+}]]]></http:query-params>
+		</http:request>
+		<ee:transform doc:name="Set leadId" doc:id="9c34a441-a6f0-4505-a192-7c5ef06f1cea" >
+			<ee:message />
+			<ee:variables >
+				<ee:set-variable variableName="leadId" ><![CDATA[%dw 2.0
+output application/json
+---
+if(isEmpty(vars.leadId filter ($.Lifecycle_Stage__c ~= "Customer"))) (vars.leadId orderBy($.LastModifiedDate))[-1].Id else ((vars.leadId filter ($.Lifecycle_Stage__c ~= "Customer")) orderBy($.LastModifiedDate))[-1].Id]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="Log leadId" doc:id="eae0842b-0b96-47fc-9d47-cf4312ca0678" message="#[vars.leadId]" />
 	</sub-flow>
 </mule>

@@ -30,7 +30,7 @@ form:
   Status : "Completed" 
         
 salesforce-sapi:
-  host: "doit-salesforce-sapi.us-e2.cloudhub.io"
+  host: "doit-salesforce-sapi-dev.us-e2.cloudhub.io"
   port: ""         #for https, Otherwise for http:8081
 #  host: "localhost"
 #  port: "8082"
@@ -46,7 +46,7 @@ salesforce-sapi:
     attempt: "5"
     
 hubspot-sapi:
-  host: "doit-hubspot-sapi.us-e2.cloudhub.io"
+  host: "doit-hubspot-sapi-dev.us-e2.cloudhub.io"
   port: ""         #for https, Otherwise for http:8081       
 #  host: "localhost"
 #  port: "8081"

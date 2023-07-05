@@ -1,4 +1,0 @@
-%dw 2.0
-
-type auto_ee148006_f68b_4162_b130_49232832903f_Output_Payload = Any
-
