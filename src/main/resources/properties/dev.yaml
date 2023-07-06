@@ -17,11 +17,12 @@ parallelForEach:
     maxConcurrency: "5"
 
 min-time:
-  contact: "1687772425319"
-  company: "1687772425319"
+  contact: "1688371568109"
+  company: "1688371568109"
+  form: "1688371568109"
 
 scheduler:
-  frequency: "4"
+  frequency: "1"
 
 form:
   Type: "Hubspot Form Fill"
