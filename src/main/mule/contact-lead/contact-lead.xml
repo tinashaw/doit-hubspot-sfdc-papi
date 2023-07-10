@@ -13,7 +13,6 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 			</scheduling-strategy>
 		</scheduler>
 		<logger level="INFO" doc:name="Log Started" doc:id="8eff753c-1932-4506-975b-64ff14e5954d" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  env : Mule::p('env'),&#10;  transactionId : correlationId,&#10;  applicationName : Mule::p('app.name'),&#10;  flowName : &quot;Hubspot contact to Salesforce contact/lead flow&quot;,&#10;  status: &quot;Started&quot;,&#10;  timestamp : now()&#10;}]" />
-		<os:clear doc:name="Clear" doc:id="3b5e4a23-a925-4e9e-ba2d-3a7f7654a05a" objectStore="Object_store"/>
 		<os:retrieve doc:name="Retrieve minTime" doc:id="caa15bd6-3db5-4a16-ab09-7faf5a02fb37" key="minTime" objectStore="Object_store" target="minTime" >
 			<os:default-value ><![CDATA[#[p('min-time.contact')]]]></os:default-value>
 		</os:retrieve>
@@ -55,7 +54,7 @@ vars.recentmodifiedContacts."time-offset"]]></ee:set-variable>
 			<when expression="#[sizeOf(vars.recentmodifiedIds) != p('url.recentmodifiedcount') as Number]" >
 				<flow-ref doc:name="Flow Ref to iterate-over-each-contact-flow" doc:id="d1e4e04c-cb0a-48e3-a8d5-36cd0084ac99" name="iterate-over-each-contact-flow" target="contactLeadFlowResponse" />
 				<logger level="INFO" doc:name="Log Completed" doc:id="6fdd0263-7d87-4052-b0cb-d8a84eb9b455" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  env : Mule::p('env'),&#10;  transactionId : correlationId,&#10;  applicationName : Mule::p('app.name'),&#10;  flowName : &quot;Hubspot contact to Salesforce contact/lead flow&quot;,&#10;  status: &quot;Completed&quot;,&#10;  timestamp : now()&#10;}]" />
-<!-- [STUDIO:"Scatter-Gather - vids"]				<scatter-gather doc:name="Scatter-Gather - vids" doc:id="cb0abdc4-3414-4503-bcdb-92c1c33c4dbc" >
+				<scatter-gather doc:name="Scatter-Gather - vids" doc:id="cb0abdc4-3414-4503-bcdb-92c1c33c4dbc" >
 					<route >
 						<try doc:name="Try task flow" doc:id="3867cd21-ba42-480a-8848-66d4fcaeb567" >
 							<flow-ref doc:name="Flow Ref to form-task-flow" doc:id="1dd04e8e-12e9-4ad7-a7ae-e43ad4746820" name="form-task-flow" />
@@ -76,13 +75,14 @@ vars.recentmodifiedContacts."time-offset"]]></ee:set-variable>
 							</error-handler>
 						</try>
 					</route>
-				</scatter-gather> [STUDIO] -->
+				</scatter-gather>
 				<os:store doc:name="Store minTime" doc:id="c7592608-56be-40ac-8149-71531983ab42" key="minTime" objectStore="Object_store" >
 					<os:value ><![CDATA[#[vars.recentmodifiedTime]]]></os:value>
 				</os:store>
 			</when>
 			<otherwise >
 				<flow-ref doc:name="Flow Ref to aggregate-hubspot-data" doc:id="f17d1ebb-c574-4adb-9bb2-060360d3c887" name="aggregate-hubspot-data" />
+				<logger level="INFO" doc:name="Log Call Hubspot" doc:id="51f0f8e5-be3c-4004-9cb2-cedd06a5aaa3" message="Call Hubspot to fetch more contact vids"/>
 			</otherwise>
 		</choice>
 	</sub-flow>
@@ -102,10 +102,10 @@ payload default []
 				<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
 ---
-payload default []
-//(payload -- (payload filter ((item, index) -> (((item.properties.lastmodifieddate.value default 0) as Number - (item.properties.ms_last_run.versions.timestamp[0] default 0)) < 3000) ))) default []]]></ee:set-payload>
+(payload -- (payload filter ((item, index) -> (((item.properties.lastmodifieddate.value default 0) as Number - (item.properties.ms_last_run.versions.timestamp[0] default 0)) < 3000) ))) default []]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
+		<logger level="INFO" doc:name="Log Size of Payload" doc:id="ac040a48-9111-498c-bb2c-7f1146c44a88" message='#["Size of Payload: " ++ sizeOf(payload) as String]'/>
 		<parallel-foreach doc:name="Parallel For Each contact" doc:id="8a8cb150-b056-4c3a-8dd1-683e1ff71ce4" maxConcurrency="${parallelForEach.contact-lead.maxConcurrency}" >
 			<ee:transform doc:name="Set Ids" doc:id="d6f0da09-f425-42ff-bf93-d822887f00cd" >
 				<ee:message >

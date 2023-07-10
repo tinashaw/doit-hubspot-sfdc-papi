@@ -48,6 +48,7 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 			</when>
 			<otherwise >
 				<flow-ref doc:name="Flow Ref to contact-leadSub_Flow" doc:id="78913d73-081b-4735-b12b-fa64556f737f" name="aggregate-company-ids-subflow" />
+				<logger level="INFO" doc:name="Log Call Hubspot" doc:id="78e4eb74-bf85-4028-a415-16b2357d8a53" message="Call Hubspot to fetch more company ids" />
 			</otherwise>
 		</choice>
 	</sub-flow>
@@ -63,6 +64,7 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 				<ee:set-payload resource="dwl/company/update/msg-aggregated-company-update-company-check.dwl" />
 			</ee:message>
 		</ee:transform>
+		<logger level="INFO" doc:name="Log Size of Payload" doc:id="e040445f-2e39-48a7-8dc5-52b97aa95732" message='#["Size of Payload: " ++ sizeOf(payload) as String]' />
 		<parallel-foreach doc:name="Parallel For Each" doc:id="b07a8e91-ff94-4b3e-a5c8-b283d41acdf5" maxConcurrency="${parallelForEach.company.maxConcurrency}" >
 			<choice doc:name="Is sfdc_account_id == Null ?" doc:id="c0bf4696-2c4d-4981-a3d1-16861377c670" >
 				<when expression="#[!isEmpty(payload.properties.sfdc_account_id.value)]" >
