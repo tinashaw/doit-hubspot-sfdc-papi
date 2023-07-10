@@ -2,11 +2,6 @@ env: "dev"
 app:
   name: "doit-hubspot-sfdc-papi-dev"
   
-api:
-  host: "0.0.0.0"
-  port: "8084"
-  timeout: "40000"  
-
 url:
   recentmodifiedcount: "20"
   
@@ -17,9 +12,9 @@ parallelForEach:
     maxConcurrency: "5"
 
 min-time:
-  contact: "1687567497280"
-  company: "1687567497280"
-
+  contact: "1688892668363"
+  company: "1688892668363"
+  form: "1688371568109"
 scheduler:
   frequency: "1"
 
@@ -32,8 +27,6 @@ form:
 salesforce-sapi:
   host: "doit-salesforce-sapi-dev.us-e2.cloudhub.io"
   port: ""         #for https, Otherwise for http:8081
-#  host: "localhost"
-#  port: "8082"
   protocol: "HTTP"
   basepath: "/api"
   responseBufferSize: "1024"
@@ -47,9 +40,7 @@ salesforce-sapi:
     
 hubspot-sapi:
   host: "doit-hubspot-sapi-dev.us-e2.cloudhub.io"
-  port: ""         #for https, Otherwise for http:8081       
-#  host: "localhost"
-#  port: "8081"
+  port: ""         #for https, Otherwise for http:8081    
   protocol: "HTTP"
   basepath: "/api"
   responseBufferSize: "1024"

@@ -6,21 +6,14 @@
 http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
-	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="788d8c9a-2bcd-4da6-80e9-f01af7943de8" >
-		<http:listener-connection host="0.0.0.0" port="8081" />
-	</http:listener-config>
 	<flow name="campaign-sync-flow" doc:id="38d273f9-d95e-4c49-9341-9c3d30ca0e81">
-		<http:listener doc:name="Listener" doc:id="e490ec61-e352-4d19-af55-176407dac4b0" config-ref="HTTP_Listener_config" path="/test"/>
 		<logger level="INFO" doc:name="Log Started" doc:id="563dbcc3-ae05-4ef4-a558-e61455576990" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  env : Mule::p('env'),&#10;  transactionId : correlationId,&#10;  applicationName : Mule::p('app.name'),&#10;  flowName : &quot;Campaign Sync flow&quot;,&#10;  status: &quot;Started&quot;,&#10;  timestamp : now()&#10;}]" />
 		<ee:transform doc:name="Inbound Payload" doc:id="97ccacd6-0f8c-4964-a42b-90b3f4109a8c">
 			<ee:message>
 				<ee:set-payload><![CDATA[%dw 2.0
 output application/json
-import * from dw::core::Arrays
 ---
-//slice(payload, 13, 14) default []
-[15351]
-//payload default []]]></ee:set-payload>
+payload default []]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
 		<http:request method="POST" doc:name="get aggregated contacts by vid" doc:id="4ac52d0d-be59-417d-aba6-9de3230f66b6" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/contact/aggregated" responseTimeout="600000" targetValue="#[payload default []]" sendCorrelationId="ALWAYS"/>

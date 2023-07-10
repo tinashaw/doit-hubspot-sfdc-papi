@@ -9,13 +9,8 @@ http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/htt
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
 http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
-	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="56bff6cf-9db5-480c-a71a-31d06f579983" >
-		<http:listener-connection host="0.0.0.0" port="8084" />
-	</http:listener-config>
 	<flow name="form-task-flow" doc:id="2226da81-0893-4f3d-9286-f3259d759608" >
-		<http:listener doc:name="Listener" doc:id="9be26955-37a8-4f53-b91a-7f0ac9dbebde" config-ref="HTTP_Listener_config" path="/testform"/>
 		<http:request method="POST" doc:name="get aggregated contacts by vid" doc:id="a9853634-8bbd-4615-925a-61347baf15aa" config-ref="HTTP_Request_configuration_hubspot_sapi" path="/contact/aggregated" responseTimeout="#[p('hubspot-sapi.responseTimeout')]" targetValue="#[payload default []]" sendCorrelationId="ALWAYS"/>
-		<os:clear doc:name="Clear" doc:id="88312295-3048-4848-8b8f-4361d1d4c14b" objectStore="Object_store"/>
 		<os:retrieve doc:name="Retrieve lastSubmissionTime" doc:id="b29a6ea0-2484-476e-bbdc-78087d39af9c" objectStore="Object_store" target="lastSubmissionTime" key="lastSubmissionTime">
 					<os:default-value><![CDATA[#[p('min-time.form')]]]></os:default-value>
 				</os:retrieve>
