@@ -16,6 +16,7 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 		<os:retrieve doc:name="Retrieve minTime" doc:id="caa15bd6-3db5-4a16-ab09-7faf5a02fb37" key="minTime" objectStore="Object_store" target="minTime" >
 			<os:default-value ><![CDATA[#[p('min-time.contact')]]]></os:default-value>
 		</os:retrieve>
+		<logger level="INFO" doc:name="Log minTime" doc:id="792ded15-7fff-40a3-b68d-3f725011e75f" message='#["minTimeContact" ++ vars.minTime as String]'/>
 		<set-variable value='#[""]' doc:name="Set Variable timeOffset" doc:id="dd5e7a03-774d-4989-a728-00766fdb609a" variableName="timeOffset" />
 		<flow-ref doc:name="Flow Ref to aggregate-hubspot-data" doc:id="0d879123-372d-40a3-96dc-520fffd86a8f" name="aggregate-hubspot-data" />
 	</flow>
@@ -50,6 +51,7 @@ output application/json
 vars.recentmodifiedContacts."time-offset"]]></ee:set-variable>
 			</ee:variables>
 		</ee:transform>
+		<logger level="INFO" doc:name="Log Size of Payload" doc:id="35235819-209c-400c-b3bd-4fb51e4eb29d" message='#["Size of Payload: " ++ sizeOf(payload) as String]' />
 		<choice doc:name="Count(recentmodifiedIds) = count" doc:id="fb25e558-7554-437c-859b-a85bbbe4f1f1" >
 			<when expression="#[sizeOf(vars.recentmodifiedIds) != p('url.recentmodifiedcount') as Number]" >
 				<flow-ref doc:name="Flow Ref to iterate-over-each-contact-flow" doc:id="d1e4e04c-cb0a-48e3-a8d5-36cd0084ac99" name="iterate-over-each-contact-flow" target="contactLeadFlowResponse" />

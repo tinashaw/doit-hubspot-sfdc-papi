@@ -16,6 +16,7 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 		<os:retrieve doc:name="Retrieve minTimeCompany" doc:id="6b30ecee-8e9e-4bde-a989-72a46939ce0c" key="minTimeCompany" objectStore="Object_store" target="minTimeCompany" >
 			<os:default-value ><![CDATA[#[p('min-time.company')]]]></os:default-value>
 		</os:retrieve>
+		<logger level="INFO" doc:name="Log minTimeCompany" doc:id="b36557cb-f583-4533-803c-c2718cb58605" message='#["minTimeCompany: " ++ vars.minTimeCompany as String]'/>
 		<set-variable value='#[""]' doc:name="Set Variable offset" doc:id="f5e2c8f7-fcb9-4142-83f5-3740594d10a1" variableName="offset" />
 		<flow-ref doc:name="Flow Ref to aggregate-company-ids-subflow" doc:id="a344d2de-1242-4ab5-ad5e-ef68b9f6a358" name="aggregate-company-ids-subflow" />
 	</flow>
@@ -38,6 +39,7 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 				<ee:set-variable resource="dwl/company/update/var-offset.dwl" variableName="offset" />
 			</ee:variables>
 		</ee:transform>
+		<logger level="INFO" doc:name="Log Size of Payload" doc:id="a525dcb9-7ca4-4e8f-bfd3-2364c1337528" message='#["Size of Payload: " ++ sizeOf(payload) as String]' />
 		<choice doc:name="Count(recentmodifiedIds) = count" doc:id="988accae-b8df-4ad0-ad33-f477fab9eae1" >
 			<when expression="#[sizeOf(vars.recentmodifiedIds) != p('url.recentmodifiedcount') as Number]" >
 				<flow-ref doc:name="Flow Ref to contact-leadFlow" doc:id="a9cd948b-f57c-426c-8ef9-4557cdba770a" name="updated-company-checks" />
@@ -47,7 +49,7 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 				<logger level="INFO" doc:name="Log Completed" doc:id="a46146c8-7ade-458d-ad9c-2b4dfb598b2f" message="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;  env : Mule::p('env'),&#10;  transactionId : correlationId,&#10;  applicationName : Mule::p('app.name'),&#10;  flowName : &quot;Hubspot company to Salesforce Account Updation flow&quot;,&#10;  status: &quot;Completed&quot;,&#10;  timestamp : now()&#10;}]" />
 			</when>
 			<otherwise >
-				<flow-ref doc:name="Flow Ref to contact-leadSub_Flow" doc:id="78913d73-081b-4735-b12b-fa64556f737f" name="aggregate-company-ids-subflow" />
+				<flow-ref doc:name="Flow Ref to aggregate-company-ids-subflow" doc:id="78913d73-081b-4735-b12b-fa64556f737f" name="aggregate-company-ids-subflow" />
 				<logger level="INFO" doc:name="Log Call Hubspot" doc:id="78e4eb74-bf85-4028-a415-16b2357d8a53" message="Call Hubspot to fetch more company ids" />
 			</otherwise>
 		</choice>
