@@ -21,7 +21,7 @@ min-time:
   company: "1687567497280"
 
 scheduler:
-  frequency: "4"
+  frequency: "1"
 
 form:
   Type: "Hubspot Form Fill"
