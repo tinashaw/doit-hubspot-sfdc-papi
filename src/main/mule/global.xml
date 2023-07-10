@@ -34,6 +34,4 @@ http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/sc
 			</reconnection>
 		</os:connection>
 	</os:config>
-	<global-property doc:name="Global Property" doc:id="04cbc6ff-05f9-4e16-baf6-743d0c283ea8" name="mule.env" value="dev" />
-	<global-property doc:name="Global Property" doc:id="71a5ec49-edd3-4fe6-b3e5-42fddc4c49b6" name="mule.key" value="DoiT123" />
 </mule>

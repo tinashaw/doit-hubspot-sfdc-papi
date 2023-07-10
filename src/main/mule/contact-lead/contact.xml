@@ -1,96 +1,262 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:http="http://www.mulesoft.org/schema/mule/http"
-	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core"
-	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
-http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
-	<flow name="create-contact-in-sfdc" doc:id="216d18a1-b0fd-4db1-859a-76e8f3e95831" >
-		<choice doc:name="is ownerId = Null ?" doc:id="b95c6a69-99c9-4eec-bce2-1309af5e4605" >
-			<when expression="#[!isEmpty(vars.id.ownerId)]">
-				<set-variable value="#[vars.id.ownerId]" doc:name="ownerId" doc:id="34c59484-725f-450e-9638-83c5592b75b7" variableName="ownerId"/>
-				<flow-ref doc:name="Flow Ref to get-salesforce-ownerId-flow" doc:id="6dc06cc0-e787-43e1-8fb1-a734b9f7abe0" name="get-salesforce-ownerId-flow" target="hubspot_owner_id" />
+	<sub-flow name="create-contact" doc:id="b0ffdaa5-8731-4c72-9de5-2672a583d532" >
+		<flow-ref doc:name="Flow Ref to capture-sf-accountid" doc:id="043283f1-4fe8-4f58-943e-79856039ed85" name="capture-sf-accountid"/>
+		<choice doc:name="is ownerId = Null ?" doc:id="3a3e8b6c-5bf6-4f30-8317-548baf7df9f9" >
+			<when expression="#[!isEmpty(vars.id.ownerId)]" >
+				<set-variable value="#[vars.id.ownerId]" doc:name="ownerId" doc:id="50afb9e4-2e87-4d83-adfa-e8fc6e013e9b" variableName="ownerId" />
+				<flow-ref doc:name="Flow Ref to get-salesforce-ownerId-flow" doc:id="23999b10-e63b-4662-b7ee-eacfaac237c5" name="get-salesforce-ownerId-flow" target="hubspot_owner_id" />
 			</when>
 			<otherwise >
-				<logger level="INFO" doc:name="ownerId is null" doc:id="b890d94c-2f6a-4e35-b714-563621fbabf3" message='#["ownerId is null"]'/>
+				<logger level="INFO" doc:name="ownerId is null" doc:id="29b8ca50-22ac-40c4-a350-6624dfb4e8a8" message='#["ownerId is null"]' />
 			</otherwise>
 		</choice>
-		<ee:transform doc:name="Contact Mapping" doc:id="8c2e4bc0-3337-4143-9a7d-248c70b1e1bf">
-			<ee:message>
-				<ee:set-payload resource="dwl/contact/msg-create-contact-mapping.dwl" />
-			
-</ee:message>
-			<ee:variables>
-				<ee:set-variable variableName="accountId"><![CDATA[%dw 2.0
+		<ee:transform doc:name="Contact Mapping" doc:id="53ed4ed2-0991-43a6-bcd2-af7fd501c7d9" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+var picklist = readUrl("classpath://picklist.json", "application/json")
+---
+[{
+	"MailingStreet" : payload.properties.address.value,
+	"MailingCity" : payload.properties.city.value,
+	"Account_Name_Text__c" : payload.properties.company.value,
+	("LeadSource" : picklist.contact.LeadSource[(payload.properties.contact_source.value)])if(payload.properties.contact_source.value != null),
+	("Hubspot_Contact_Type__c" : picklist.contact.Hubspot_Contact_Type__c[(payload.properties.contact_type.value)])if(payload.properties.contact_type.value != null),
+	"Hubspot_Country__c" : payload.properties.country.value,
+	("Do_Not_Call__c": payload.properties.do_not_call__c.value as Boolean)if(payload.properties.do_not_call__c.value != null),//checkbox
+	("DoiT_Parent_Sales_Region__c" : picklist.contact.DoiT_Parent_Sales_Region__c[(payload.properties.doit_sales_region.value)])if(payload.properties.doit_sales_region.value != null),
+	"Fax" : payload.properties.fax.value,
+	 ("Hot_Lead__c": payload.properties.hot_lead.value as Boolean )if(payload.properties.hot_lead.value != null),//checkbox
+	("Buying_Role__c": picklist.contact.Buying_Role__c[(payload.properties.hs_buying_role.value)])if(payload.properties.hs_buying_role.value !=null),
+	"HasOptedOutOfEmail": if(payload.properties.no_more.value != null) true else false,
+	("Hubspot_Lead_Status__c" : picklist.contact.Hubspot_Lead_Status__c[(payload.properties.hs_lead_status.value)])if(payload.properties.hs_lead_status.value != null),
+	"Persona__c" :payload.properties.hs_persona.value,
+	("OwnerId": vars.hubspot_owner_id)if(vars.hubspot_owner_id != null),
+	"Lead_Score__c" : payload.properties.hubspotscore.value,
+	("Lead_Source_Detail__c" : picklist.contact.contact_source_detail[(payload.properties.contact_source_detail.value)])if(payload.properties.contact_source_detail.value != null),
+	("MQL_Achievement_Reason__c" : picklist.contact.mql_achievement_reason__c[(payload.properties.mql_achievement_reason__c.value)])if(payload.properties.mql_achievement_reason__c.value != null),
+	("NPS_Opt_In__c" : picklist.contact.nps_opt_in__c[(payload.properties.nps_opt_in__c.value)])if(payload.properties.nps_opt_in__c.value != null),
+	"SalesLoft1__Most_Recent_Cadence_Name__c" : payload.properties.sfdc_most_recent_cadence_name.value,
+	("Event_Date__c" : payload.properties.event_date.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.event_date.value != null),
+	"Event_Name__c" : payload.properties.event_name.value,
+	"Hubspot_State_Region__c" : payload.properties.state.value,
+	("Marketing_Contact__c" : picklist.contact.marketing_contact__c[(payload.properties.marketing_contact__c.value)])if(payload.properties.marketing_contact__c.value != null),
+	("Became_a_Customer_Date__c": payload.properties.became_a_customer_date__c.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.became_a_customer_date__c.value != null),//datetime
+	("Became_a_Lead_Date__c": payload.properties.became_a_lead_date__c.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.became_a_lead_date__c.value != null), //datetime
+	("Became_a_Marketing_Qualified_Lead_Date__c": payload.properties.became_a_marketing_qualified_lead_date__c.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.became_a_marketing_qualified_lead_date__c.value != null), //datetime
+	("Became_a_Sales_Accepted_Lead_SAL__c": payload.properties.became_a_sales_accepted_lead_sal__c.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.became_a_sales_accepted_lead_sal__c.value != null), //datetime
+	("Became_a_Sales_Qualified_Lead_Date__c": payload.properties.became_a_sales_qualified_lead_date__c.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.became_a_sales_qualified_lead_date__c.value != null), //datetime
+	("Became_a_Subscriber_Date__c": payload.properties.became_a_subscriber_date__c.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.became_a_subscriber_date__c.value != null), //datetime
+	("Became_a_Tele_Accepted_Lead_TAL__c": payload.properties.became_a_tele_accepted_lead_tal__c.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.became_a_tele_accepted_lead_tal__c.value != null),   //datetime
+	("Became_an_Evangelist_Date__c": payload.properties.became_an_evangelist_date__c.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.became_an_evangelist_date__c.value != null), //datetime
+	("Became_an_Opportunity_Date__c": payload.properties.became_an_opportunity_date__c.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.became_an_opportunity_date__c.value != null), //datetime
+	("Date_Lead_Became_Accepted__c": payload.properties.date_lead_became_accepted__c.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.date_lead_became_accepted__c.value != null),//datetime
+	("Date_Lead_Became_In_Progress__c": payload.properties.date_lead_became_in_progress__c.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.date_lead_became_in_progress__c.value != null), //datetime
+	("Do_Not_Contact__c": payload.properties.do_not_contact__c.value as Boolean)if(payload.properties.do_not_contact__c.value != null), //checkbox
+	"Email": payload.properties.email.value,
+	("Email_Opt_Out_Date__c": payload.properties.email_opt_out_date__c.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.email_opt_out_date__c.value != null),
+	"Email_Opt_Out_Reason__c": payload.properties.email_opt_out_reason__c.value,
+	"FirstName" : payload.properties.firstname.value,
+	("Marketing_Contact_Status__c" : picklist.contact.hs_marketable_status[(payload.properties.hs_marketable_status.value)])if(payload.properties.hs_marketable_status.value != null),
+	"Hubspot_Contact_ID__c" : (vars.id.vid default vars.vid) as String,
+	"Title" : payload.properties.jobtitle.value,
+	"LastName" : payload.properties.lastname.value,
+	("Lifecycle_Stage__c" : picklist.contact.lifecycle_stage__c[(payload.properties.lifecycle_stage__c.value)])if(payload.properties.lifecycle_stage__c.value != null),
+	"Description" : payload.properties.note_body.value,
+	("AccountID": vars.accountId)if(vars.accountId != null),
+	"Salutation" : payload.properties.salutation.value,
+	("Date_Became_a_Hot_Lead__c" : payload.properties.sfdc_became_a_hot_lead.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.sfdc_became_a_hot_lead.value != null), //dateTime
+	("Became_a_Warm_Lead__c" : payload.properties.sfdc_became_a_warm_lead.value as Number as DateTime {unit : "milliseconds"} as Date) if(payload.properties.sfdc_became_a_warm_lead.value != null), // date,
+	"of_Marketing_Emails_Clicked__c" : payload.properties.hs_email_click.value,
+	"of_Marketing_Emails_Opened__c" : payload.properties.hs_email_open.value,
+	("First_Click__c" : payload.properties.hs_email_first_click_date.value  as Number as DateTime {unit : "milliseconds"})if(payload.properties.hs_email_first_click_date.value != null), //datetime,
+	("First_Opened__c" : payload.properties.hs_email_first_open_date.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.hs_email_first_open_date.value != null),
+	"Hubspot_Company_ID__c" : payload.properties.associatedcompanyid.value
+}]]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="accountId" ><![CDATA[%dw 2.0
 output application/java
 ---
 vars.accountId default ""]]></ee:set-variable>
 			</ee:variables>
 		</ee:transform>
-		<http:request method="POST" doc:name="Create contact in salesforce" doc:id="f6fd8959-d3f9-437b-9a40-4212c89a76a8" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/contact/create" responseTimeout="#[p('salesforce-sapi.responseTimeout')]" sendCorrelationId="ALWAYS"/>
-<choice doc:name="If Successful ?" doc:id="72e7ecaa-c078-42b0-8ed7-5b4f2257e207" >
-			<when expression="#[payload.successful]">
-				<ee:transform doc:name="Successful Response" doc:id="637f1758-1030-42dc-bca0-658ae11f506e">
-			<ee:message>
-						<ee:set-payload resource="dwl/contact/msg-create-contact-sync-back.dwl" />
-			
-</ee:message>
-			<ee:variables>
-			</ee:variables>
-		</ee:transform>
-		<logger level="INFO" doc:name="Log Contact Created" doc:id="6374ded6-7269-4947-a045-d87e538d05f2" message="Contact Created and ContactId is #[payload.sfdc_contact_id]" />
-				<flow-ref doc:name="Flow Ref to salesforce-Ids-sync-backFlow" doc:id="6997a27b-4881-46d4-8979-8fcecc74d549" name="salesforce-Ids-sync-backFlow-old"/>
-			
-</when>
-			<otherwise>
-				<ee:transform doc:name="Failed Response" doc:id="f665dd26-8354-4b55-a6cf-81f8448b5da9" >
-					<ee:message >
-						<ee:set-payload resource="dwl/contact/msg-create-contact-error-message.dwl" />
-					
-</ee:message>
-				</ee:transform>
-				<logger level="ERROR" doc:name="Log error message" doc:id="578ac5cd-2772-4345-a44c-c911dae70998" message="#[payload]" />
-			
-</otherwise>
-		</choice>
-	</flow>
-	<flow name="update-contact-in-sfdc" doc:id="1116eeb9-5b10-4c85-95c8-359a1d0da409" >
-		<choice doc:name="is ownerId = Null ?" doc:id="8d93869b-6fab-4a62-a99a-5ff7ecd09343">
-			<when expression="#[!isEmpty(payload.properties.hubspot_owner_id.value)]">
-				<set-variable value="#[payload.properties.hubspot_owner_id.value]" doc:name="ownerId" doc:id="7eadcfcd-b65f-4fe5-ae40-404c9a319178" variableName="ownerId" />
-				<flow-ref doc:name="Flow Ref to get-salesforce-ownerId-flow" doc:id="d554822e-54f8-4b85-80c1-a84ffd6a3ff4" name="get-salesforce-ownerId-flow" target="hubspot_owner_id" />
-			</when>
-			<otherwise>
-				<logger level="INFO" doc:name="ownerId is null" doc:id="313136bd-8bf5-4bd1-937d-03a315fe9ed5" message='#["ownerId is null"]' />
-			</otherwise>
-		</choice>
-		<ee:transform doc:name="Mappaing" doc:id="fbdcf5ef-80d1-40e8-87fc-000016eed8d3" >
-			<ee:message >
-				<ee:set-payload resource="dwl/contact/msg-update-contact-mapping.dwl" />
-			
-</ee:message>
-		</ee:transform>
-		<http:request method="POST" doc:name="Request SF to update company" doc:id="40eb3c84-a9da-4364-9990-63281c5f5a23" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/contact/update" responseTimeout="-1" sendCorrelationId="ALWAYS"/>
-		<choice doc:name="If Successful ?" doc:id="b2957610-0718-4dc5-bcb1-019a5e086081" >
+		<http:request method="POST" doc:name="Create contact in salesforce" doc:id="9c0bf0db-2ba9-4c7b-967a-82422958073c" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/contact/create" sendCorrelationId="ALWAYS" responseTimeout="#[p('salesforce-sapi.responseTimeout')]" />
+		<choice doc:name="If Successful ?" doc:id="4cda2a88-021e-4975-9484-db446cc753d0" >
 			<when expression="#[payload.successful]" >
-				<ee:transform doc:name="Successful Response" doc:id="aba9b228-9814-4855-8c8c-47408230277f" >
+				<ee:transform doc:name="Successful Response" doc:id="a1269db1-154b-48e3-9394-2dd57c57f3fb" >
 					<ee:message >
-						<ee:set-payload resource="dwl/contact/msg-update-contact-sync-back.dwl" />
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"sfdc_contact_id" : payload.items.id[0],
+	"sfdc_account_id" : vars.accountId,
+	"ms_last_run" : (now()) as DateTime as Number {unit:"milliseconds"} as String
+}]]></ee:set-payload>
 					</ee:message>
 					<ee:variables />
 				</ee:transform>
-				<logger level="INFO" doc:name="Log Contact Updated in SF" doc:id="050f78ee-965f-47eb-83ff-3e4d384184d4" message="Contact Updated in SF #[payload.sfdc_contact_id] " />
-				<flow-ref doc:name="Flow Ref to salesforce-Ids-sync-backFlow" doc:id="c87e4956-8bc2-4513-be63-09114763a122" name="salesforce-Ids-sync-backFlow-old" />
+				<logger level="INFO" doc:name="Log Contact Created" doc:id="43339e58-72c7-4cd6-8f67-06ca51460bb5" message="Contact Created and ContactId is #[payload.sfdc_contact_id]" />
+				<flow-ref doc:name="Flow Ref to salesforce-Ids-sync-backFlow" doc:id="672aee4f-9a18-421a-8ccf-828512899323" name="salesforce-Ids-sync-back-flow" />
 			</when>
 			<otherwise >
-				<ee:transform doc:name="Failed Response" doc:id="90817a8b-864f-4aac-8b41-2e9808c5910d" >
+				<ee:transform doc:name="Failed Response" doc:id="faf38159-8d21-4781-af83-0d607633d448" >
 					<ee:message >
-						<ee:set-payload resource="dwl/contact/msg-update-contact-error-message.dwl" />
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+--- 
+{
+	"errorMessage":payload.items.message[0]
+}]]></ee:set-payload>
 					</ee:message>
 				</ee:transform>
-				<logger level="ERROR" doc:name="Log error message" doc:id="8c5bacd3-6fe5-422b-aaed-7df14251a276" message="#[payload]" />
+				<logger level="ERROR" doc:name="Log error message" doc:id="b733ed4a-17f5-4e86-aafb-1675b7662a22" message="#[payload]" />
 			</otherwise>
 		</choice>
-	</flow>
+	</sub-flow>
+	<sub-flow name="update-contact" doc:id="afa57fcd-d4ec-4fcf-9c4f-0933d1631065" >
+		<flow-ref doc:name="Flow Ref to capture-sf-accountid" doc:id="bfabe06d-654f-4a2f-882a-b0087bc7d207" name="capture-sf-accountid" />
+		<choice doc:name="is ownerId = Null ?" doc:id="3c66b30b-fffe-43cf-8a98-ac7e2cdfce14" >
+			<when expression="#[!isEmpty(vars.id.ownerId)]" >
+				<set-variable value="#[vars.id.ownerId]" doc:name="ownerId" doc:id="b6c60810-9cfb-4c34-a555-ed6d1e759461" variableName="ownerId" />
+				<flow-ref doc:name="Flow Ref to get-salesforce-ownerId-flow" doc:id="8f52e09e-0e9a-4470-bdf1-d7173b207f42" name="get-salesforce-ownerId-flow" target="hubspot_owner_id" />
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="ownerId is null" doc:id="ada4d542-9db0-42fc-833b-8c0d10c5b426" message='#["ownerId is null"]' />
+			</otherwise>
+		</choice>
+		<ee:transform doc:name="Mappaing" doc:id="0258d89c-05e7-4ca0-9196-0fc8fcfa8487" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+var picklist = readUrl("classpath://picklist.json", "application/json")
+---
+[{
+	"MailingStreet" : payload.properties.address.value,
+	"MailingCity" : payload.properties.city.value,
+	("LeadSource" : picklist.contact.LeadSource[(payload.properties.contact_source.value)])if(payload.properties.contact_source.value != null),
+	("Hubspot_Contact_Type__c" : picklist.contact.Hubspot_Contact_Type__c[(payload.properties.contact_type.value)])if(payload.properties.contact_type.value != null),
+	"Hubspot_Country__c" : payload.properties.country.value,
+	("Do_Not_Call__c": payload.properties.do_not_call__c.value as Boolean)if(payload.properties.do_not_call__c.value != null),//checkbox
+	("DoiT_Parent_Sales_Region__c" : picklist.contact.DoiT_Parent_Sales_Region__c[(payload.properties.doit_sales_region.value)])if(payload.properties.doit_sales_region.value != null),
+	"Fax" : payload.properties.fax.value,
+	 ("Hot_Lead__c": payload.properties.hot_lead.value as Boolean )if(payload.properties.hot_lead.value != null),//checkbox
+	("Buying_Role__c": picklist.contact.Buying_Role__c[(payload.properties.hs_buying_role.value)])if(payload.properties.hs_buying_role.value !=null),
+	"HasOptedOutOfEmail": if(payload.properties.no_more.value != null) true else false,
+	("Hubspot_Lead_Status__c" : picklist.contact.Hubspot_Lead_Status__c[(payload.properties.hs_lead_status.value)])if(payload.properties.hs_lead_status.value != null),
+	"Persona__c" :payload.properties.hs_persona.value,
+	("OwnerId": vars.hubspot_owner_id)if(vars.hubspot_owner_id != null),
+	"Lead_Score__c" : payload.properties.hubspotscore.value,
+	("Lead_Source_Detail__c" : picklist.contact.contact_source_detail[(payload.properties.contact_source_detail.value)])if(payload.properties.contact_source_detail.value != null),
+	("MQL_Achievement_Reason__c" : picklist.contact.mql_achievement_reason__c[(payload.properties.mql_achievement_reason__c.value)])if(payload.properties.mql_achievement_reason__c.value != null),
+	("NPS_Opt_In__c" : picklist.contact.nps_opt_in__c[(payload.properties.nps_opt_in__c.value)])if(payload.properties.nps_opt_in__c.value != null),
+	"SalesLoft1__Most_Recent_Cadence_Name__c" : payload.properties.sfdc_most_recent_cadence_name.value,
+	("Event_Date__c" : payload.properties.event_date.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.event_date.value != null),
+	"Event_Name__c" : payload.properties.event_name.value,
+	"Hubspot_State_Region__c" : payload.properties.state.value,
+	("Marketing_Contact__c" : picklist.contact.marketing_contact__c[(payload.properties.marketing_contact__c.value)])if(payload.properties.marketing_contact__c.value != null),
+	("Became_a_Customer_Date__c": payload.properties.became_a_customer_date__c.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.became_a_customer_date__c.value != null),//datetime
+	("Became_a_Lead_Date__c": payload.properties.became_a_lead_date__c.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.became_a_lead_date__c.value != null), //datetime
+	("Became_a_Marketing_Qualified_Lead_Date__c": payload.properties.became_a_marketing_qualified_lead_date__c.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.became_a_marketing_qualified_lead_date__c.value != null), //datetime
+	("Became_a_Sales_Accepted_Lead_SAL__c": payload.properties.became_a_sales_accepted_lead_sal__c.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.became_a_sales_accepted_lead_sal__c.value != null), //datetime
+	("Became_a_Sales_Qualified_Lead_Date__c": payload.properties.became_a_sales_qualified_lead_date__c.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.became_a_sales_qualified_lead_date__c.value != null), //datetime
+	("Became_a_Subscriber_Date__c": payload.properties.became_a_subscriber_date__c.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.became_a_subscriber_date__c.value != null), //datetime
+	("Became_a_Tele_Accepted_Lead_TAL__c": payload.properties.became_a_tele_accepted_lead_tal__c.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.became_a_tele_accepted_lead_tal__c.value != null),   //datetime
+	("Became_an_Evangelist_Date__c": payload.properties.became_an_evangelist_date__c.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.became_an_evangelist_date__c.value != null), //datetime
+	("Became_an_Opportunity_Date__c": payload.properties.became_an_opportunity_date__c.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.became_an_opportunity_date__c.value != null), //datetime
+	("Date_Lead_Became_Accepted__c": payload.properties.date_lead_became_accepted__c.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.date_lead_became_accepted__c.value != null),//datetime
+	("Date_Lead_Became_In_Progress__c": payload.properties.date_lead_became_in_progress__c.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.date_lead_became_in_progress__c.value != null), //datetime
+	("Do_Not_Contact__c": payload.properties.do_not_contact__c.value as Boolean)if(payload.properties.do_not_contact__c.value != null), //checkbox
+	"Email": payload.properties.email.value,
+	("Email_Opt_Out_Date__c": payload.properties.email_opt_out_date__c.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.email_opt_out_date__c.value != null),
+	"Email_Opt_Out_Reason__c": payload.properties.email_opt_out_reason__c.value,
+	"FirstName" : payload.properties.firstname.value,
+	("Marketing_Contact_Status__c" : picklist.contact.hs_marketable_status[(payload.properties.hs_marketable_status.value)])if(payload.properties.hs_marketable_status.value != null),
+	"Hubspot_Contact_ID__c" : (vars.id.vid default vars.vid) as String,
+	"Title" : payload.properties.jobtitle.value,
+	"LastName" : payload.properties.lastname.value,
+	("Lifecycle_Stage__c" : picklist.contact.lifecycle_stage__c[(payload.properties.lifecycle_stage__c.value)])if(payload.properties.lifecycle_stage__c.value != null),
+	"Description" : payload.properties.note_body.value,
+	("AccountID": vars.accountId)if(vars.accountId != null),
+	"Salutation" : payload.properties.salutation.value,
+	("Date_Became_a_Hot_Lead__c" : payload.properties.sfdc_became_a_hot_lead.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.sfdc_became_a_hot_lead.value != null), //dateTime
+	("Became_a_Warm_Lead__c" : payload.properties.sfdc_became_a_warm_lead.value as Number as DateTime {unit : "milliseconds"} as Date) if(payload.properties.sfdc_became_a_warm_lead.value != null), // date,
+	"of_Marketing_Emails_Clicked__c" : payload.properties.hs_email_click.value,
+	"of_Marketing_Emails_Opened__c" : payload.properties.hs_email_open.value,
+	("First_Click__c" : payload.properties.hs_email_first_click_date.value  as Number as DateTime {unit : "milliseconds"})if(payload.properties.hs_email_first_click_date.value != null), //datetime,
+	("First_Opened__c" : payload.properties.hs_email_first_open_date.value as Number as DateTime {unit : "milliseconds"})if(payload.properties.hs_email_first_open_date.value != null),
+	"Id": payload.properties.sfdc_contact_id.value default vars.contactId,
+	"Hubspot_Company_ID__c" : payload.properties.associatedcompanyid.value
+}]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<http:request method="POST" doc:name="Request SF to update company" doc:id="951d3a77-9e99-4133-9db8-17b1eda24258" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/contact/update" sendCorrelationId="ALWAYS" responseTimeout="-1" />
+		<choice doc:name="If Successful ?" doc:id="66ede336-34b6-4a79-8f99-c580021562f8" >
+			<when expression="#[payload.successful]" >
+				<ee:transform doc:name="Successful Response" doc:id="73e9e2ac-3a56-48f8-a814-3f80a9eaaf34" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"sfdc_contact_id" : payload.items.id[0],
+	"sfdc_account_id" : vars.accountId,
+	"ms_last_run" : (now()) as DateTime as Number {unit:"milliseconds"} as String
+}]]></ee:set-payload>
+					</ee:message>
+					<ee:variables />
+				</ee:transform>
+				<logger level="INFO" doc:name="Log Contact Updated in SF" doc:id="97083490-1d17-4a7b-98c9-284bbaaed0e0" message="Contact Updated in SF #[payload.sfdc_contact_id] " />
+				<flow-ref doc:name="Flow Ref to salesforce-Ids-sync-backFlow" doc:id="006dd328-83ca-4b36-b1df-28906316fdd5" name="salesforce-Ids-sync-back-flow" />
+			</when>
+			<otherwise >
+				<ee:transform doc:name="Failed Response" doc:id="0a6fc4f8-f414-49f7-9684-0493ac9101eb" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+--- 
+{
+	"errorMessage":payload.items.message[0]
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="ERROR" doc:name="Log error message" doc:id="0a1a3ffd-5c1c-49b7-b84f-4d1d1de1fbf2" message="#[payload]" />
+			</otherwise>
+		</choice>
+	</sub-flow>
+	<sub-flow name="choose-a-contact-from-more-than-one-sf-contacts" doc:id="360fdad1-1742-4416-89cd-838308b2c5b2" >
+		<ee:transform doc:name="Set querytobeexecuted" doc:id="025edc5e-9a80-4b0f-8eac-42305addbbe3" >
+			<ee:message />
+			<ee:variables >
+				<ee:set-variable variableName="querytobeexecuted" ><![CDATA[%dw 2.0
+output application/json
+---
+"Select Id, Lifecycle_Stage__c, LastModifiedDate from Contact where Id IN ('" ++ (vars.contactIdbyEmail.Id joinBy  ("','") ) ++  "')"]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<http:request method="GET" doc:name="Get SF contact details" doc:id="d9b5d202-3821-41d0-8b55-5dcdf8d99bf8" config-ref="HTTP_Request_configuration_salesforce_sapi" path="/genericquery" sendCorrelationId="ALWAYS" responseTimeout="#[p('salesforce-sapi.responseTimeout')]" target="contactId" >
+			<http:query-params ><![CDATA[#[output application/java
+---
+{
+	"querytobeexecuted" : vars.querytobeexecuted
+}]]]></http:query-params>
+		</http:request>
+		<ee:transform doc:name="Set contactId" doc:id="36ff23e8-6980-4d59-bf5e-d58a283ce930" >
+			<ee:message />
+			<ee:variables >
+				<ee:set-variable variableName="contactId" ><![CDATA[%dw 2.0
+output application/json
+---
+if(isEmpty(vars.contactId filter ($.Lifecycle_Stage__c ~= "Customer"))) (vars.contactId orderBy($.LastModifiedDate))[-1].Id else ((vars.contactId filter ($.Lifecycle_Stage__c ~= "Customer")) orderBy($.LastModifiedDate))[-1].Id]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="Log contactId" doc:id="e5abc869-a3d0-401b-ace4-d5d79a7d3401" message="#[vars.contactId]" />
+	</sub-flow>
 </mule>
