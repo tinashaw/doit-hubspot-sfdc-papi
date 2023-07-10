@@ -261,7 +261,7 @@ output application/json
 				<ee:set-variable variableName="leadId" ><![CDATA[%dw 2.0
 output application/json
 ---
-if(isEmpty(vars.leadId filter ($.Lifecycle_Stage__c ~= "Customer"))) (vars.leadId orderBy($.LastModifiedDate))[-1].Id else ((vars.leadId filter ($.Lifecycle_Stage__c ~= "Customer")) orderBy($.LastModifiedDate))[-1].Id]]></ee:set-variable>
+(vars.leadId orderBy($.LastModifiedDate))[-1].Id]]></ee:set-variable>
 			</ee:variables>
 		</ee:transform>
 		<logger level="INFO" doc:name="Log leadId" doc:id="eae0842b-0b96-47fc-9d47-cf4312ca0678" message="#[vars.leadId]" />
